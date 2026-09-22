@@ -26,7 +26,7 @@ def create_board(BOARD, RED_COLOR, BLACK_COLOR):
     
 ## ---------create the checker board 
 create_board(BOARD, RED_COLOR, BLACK_COLOR)
-## Surface.blit(BOARD, (0,0)) ##i thought this would move the board in the middle but it didn't so i commented it out until we figured it out
+Surface.blit(BOARD, (0,0)) 
 pygame.display.flip()
 
 #start game 
