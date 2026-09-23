@@ -2,6 +2,7 @@ from pathlib import Path
 from config import RED_COLOR, BLACK_COLOR, TAN_COLOR
 import pygame
 import pandas as pd
+import customtkinter as tk
 
 pygame.init()
 
@@ -53,7 +54,7 @@ while running:
 pygame.quit()
 import pygame
 import pandas as pd
-from tkinter import customtkinter as tk
+import customtkinter as tk
 
 pygame.init()
 
