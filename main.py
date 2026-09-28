@@ -28,6 +28,7 @@ def create_board(BOARD, RED_COLOR, BLACK_COLOR):
 create_board(BOARD, RED_COLOR, BLACK_COLOR)
 Surface.blit(BOARD, (0,0)) 
 pygame.display.flip()
+#testing code
 
 #start game 
 running = True
