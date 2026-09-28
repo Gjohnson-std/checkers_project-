@@ -29,7 +29,7 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    board.blit(image_resize(red_piece_king), (0, 0))
+    board.blit(image_resize(red_piece), (0, 0))
     pygame.display.flip()
 
 pygame.quit()
