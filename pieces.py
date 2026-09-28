@@ -9,10 +9,10 @@ pygame.display.set_caption("Checker Pieces")
 
 
 #All images of the pieces
-black_piece_king = pygame.image.load("checker_pieces_drawings/black_king_piece.png")
-black_piece = pygame.image.load("checker_pieces_drawings/black_piece.png")
-red_piece_king = pygame.image.load("checker_pieces_drawings/red_king_piece.png")
-red_piece = pygame.image.load("checker_pieces_drawings/red_piece.png")
+black_piece_king = pygame.image.load("checker_pieces_drawings/black_king_p.png")
+black_piece = pygame.image.load("checker_pieces_drawings/black_p.png")
+red_piece_king = pygame.image.load("checker_pieces_drawings/red_king_p.png")
+red_piece = pygame.image.load("checker_pieces_drawings/red_p.png")
 
 #Changing image scale
 def image_resize(img):
