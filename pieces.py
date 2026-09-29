@@ -1,37 +1,37 @@
 import pygame 
-import pandas as pd
-
-pygame.init()
-
-#board here
-board = pygame.display.set_mode((800, 800))
-pygame.display.set_caption("Checker Pieces")
-
 
 #All images of the pieces
-black_piece_king = pygame.image.load("checker_pieces_drawings/black_king_p.png")
-black_piece = pygame.image.load("checker_pieces_drawings/black_p.png")
-red_piece_king = pygame.image.load("checker_pieces_drawings/red_king_p.png")
-red_piece = pygame.image.load("checker_pieces_drawings/red_p.png")
+bpk = pygame.image.load("checker_pieces_drawings/black_king_p.png")
+bp = pygame.image.load("checker_pieces_drawings/black_p.png")
+rpk = pygame.image.load("checker_pieces_drawings/red_king_p.png")
+rp = pygame.image.load("checker_pieces_drawings/red_p.png")
 
 #Changing image scale
-def image_resize(img):
-    return pygame.transform.smoothscale(img, (100, 100))
+def image_resize(img, resize_val):
+    return pygame.transform.smoothscale(img, (resize_val, resize_val))
 
-#use board and create 12 red_pieces and 12 black_pieces
-def pieces_starting_pos(red_piece_img, black_piece_image):
-    red_piece_arr = [12]
-    black_piece_arr = [12]
-    
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    board.blit((red_piece), (0, 0))
-    pygame.display.flip()
+#resized and ready pieces
+black_piece = image_resize(bp, 45.875)
+red_piece = image_resize(rp, 46.875)
 
-pygame.quit()
+#gets pieces in starting position and returns a list that will be using in main method in Surface.blits(list)
+def red_piece_start(red_piece):
+    red_piece_set = []
+    for row in range(3):
+        #row
+        for col in range(8):
+            #col
+            if(row + col) % 2 != 0:
+                bor = 2
+                red_piece_set.append((red_piece, pygame.Rect(col * 46.875, row * 46.875, 46.875, 46.875)))
+    return red_piece_set
+    #creating each piece at the starting position
+
+if __name__ == "__main__":
+    red_piece_start(red_piece)
+
+
+
 
 
