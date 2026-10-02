@@ -12,24 +12,11 @@ def image_resize(img, resize_val):
 
 
 #resized and ready pieces
-black_piece = image_resize(bp, 45.875)
-red_piece = image_resize(rp, 46.875)
+#square size = 46.875
+black_piece = image_resize(bp, 50)
+red_piece = image_resize(rp, 50)
 
-#gets pieces in starting position and returns a list that will be using in main method in Surface.blits(list)
-def red_piece_start(red_piece):
-    red_piece_set = []
-    for row in range(3):
-        #row
-        for col in range(8):
-            #col
-            if(row + col) % 2 != 0:
-                bor = 2
-                red_piece_set.append((red_piece, pygame.Rect(col * 46.875, row * 46.875, 46.875, 46.875)))
-    return red_piece_set
-    #creating each piece at the starting position
 
-if __name__ == "__main__":
-    red_piece_start(red_piece)
 
 
 
