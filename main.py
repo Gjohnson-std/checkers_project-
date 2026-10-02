@@ -65,3 +65,7 @@ while running:
 
 #stop game 
 pygame.quit()
+
+#meeting date = 9/29/2026
+#minutes = 20
+#topics = Finishing sprint 1, creating user stories. merging checker pieces onto release testing main, creating acceptance criteria
