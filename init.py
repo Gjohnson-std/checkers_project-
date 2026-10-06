@@ -4,6 +4,7 @@ from pieces import red_piece, black_piece, black_king, red_king, CheckerPiece
 import pygame
 import pandas as pd
 import customtkinter as tk
+import coverage
 
 pygame.init()
 

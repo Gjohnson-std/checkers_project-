@@ -1,5 +1,7 @@
 import pygame 
 
+#IMPORTANT!!! - pull from main and commit to release testing main!!!!
+
 #All images of the pieces
 bpk = pygame.image.load("checker_pieces_drawings/black_king_p.png")
 bp = pygame.image.load("checker_pieces_drawings/black_p.png")
