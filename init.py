@@ -20,8 +20,8 @@ pygame.init()
 # Window configuration
 # --------------------------------------------------
 
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1920
+HEIGHT = 1080
 
 gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Troubleshooters: Checkers Game")
@@ -63,7 +63,8 @@ BOARD_COLS = 8
 SQUARE_SIZE = BOARD_SIZE / BOARD_COLS
 
 BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
-
+board_x = (WIDTH - BOARD_SIZE) // 2
+board_y = (HEIGHT - BOARD_SIZE) // 2
 
 def create_board():
     """
@@ -108,8 +109,8 @@ create_board()
 # Create pieces
 # --------------------------------------------------
 
-red_piece_set = create_red_pieces(red_piece)
-black_piece_set = create_black_pieces(black_piece)
+red_piece_set = create_red_pieces(red_piece, board_x, board_y)
+black_piece_set = create_black_pieces(black_piece, board_x, board_y)
 
 
 # --------------------------------------------------
@@ -147,8 +148,6 @@ while running:
 
 
     # Board
-    board_x = (WIDTH - BOARD_SIZE) // 2
-    board_y = (HEIGHT - BOARD_SIZE) // 2
 
     gameDisplay.blit(
     BOARD,
