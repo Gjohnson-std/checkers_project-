@@ -1,6 +1,6 @@
 from pathlib import Path 
 from config import RED_COLOR, BLACK_COLOR, TAN_COLOR, WHITE_COLOR
-from pieces import red_piece, black_piece
+from pieces import red_piece, black_piece, black_king, red_king, CheckerPiece
 import pygame
 import pandas as pd
 import customtkinter as tk
@@ -33,6 +33,7 @@ BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
 SQUARE_AREA = (BOARD_SIZE - (BOARDER_LENGTH * 2)) / BOARD_ROWS
 #area of every space
 
+#CREATING BOARD
 def create_board(BOARD, RED_COLOR, BLACK_COLOR):
     for row in range(8):
         for column in range(8):
@@ -42,43 +43,59 @@ def create_board(BOARD, RED_COLOR, BLACK_COLOR):
                 pygame.draw.rect(BOARD, BLACK_COLOR, (column * SQUARE_AREA + BOARDER_LENGTH, row * SQUARE_AREA + BOARDER_LENGTH, SQUARE_AREA, SQUARE_AREA) )
     pygame.draw.rect(BOARD, TAN_COLOR, (0, 0, BOARD_SIZE, BOARD_SIZE), 5)
 
-def create_pieces(red_piece_img, black_piece_img, board_x, board_y):
+
+#CREATING PIECES
+def create_pieces(red_piece_img, red_king_img, black_piece_img, black_king_img,  board_x, board_y):
     #putting red pieces at start positions
-    red_piece_set = []
+    red_piece_set = pygame.sprite.Group()
     for row in range(3):
-        #row
         for col in range(8):
-            #col
             if(row + col) % 2 != 0:
-                bor = 2
-                red_piece_set.append((red_piece_img, pygame.Rect(col * SQUARE_AREA + BOARDER_LENGTH + board_x, row * SQUARE_AREA + BOARDER_LENGTH + board_y, SQUARE_AREA, SQUARE_AREA)))
+                red_piece_set.add(CheckerPiece(red_piece_img, red_king_img, row, col, SQUARE_AREA, BOARDER_LENGTH, board_x, board_y))
     #putting black piecees at the starting position
-    black_piece_set = []
+
+    black_piece_set = pygame.sprite.Group()
     for row in range(5, 8):
-        #row
         for col in range(8):
-            #col
             if(row + col) % 2 != 0:
-                black_piece_set.append((black_piece_img, pygame.Rect(col * SQUARE_AREA + BOARDER_LENGTH + board_x, row * SQUARE_AREA + BOARDER_LENGTH + board_y, SQUARE_AREA, SQUARE_AREA)))
+                black_piece_set.add(CheckerPiece(black_piece_img, black_king_img, row, col, SQUARE_AREA, BOARDER_LENGTH, board_x, board_y))
     return red_piece_set, black_piece_set
+    #produces set of pieces for each player
 
-#createing set of pieces for each player
-
+red_piece_set, black_piece_set = create_pieces(red_piece, red_king, black_piece, black_king, 200, 100)
+selected_piece = None
 # --- GAME LOOP ---
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+            #select piece of no peice is selected
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            position = pygame.mouse.get_pos()
+            if selected_piece is None:
+                for piece in red_piece_set.sprites() + black_piece_set.sprites():
+                    if piece.rect.collidepoint(position):
+                        selected_piece = piece
+                        break
+            else:
+                #if piece is selected, move it
+                mouse_x, mouse_y = position
+
+                col = int((mouse_x - 200 - BOARDER_LENGTH) // SQUARE_AREA)
+                row = int((mouse_y - 100 - BOARDER_LENGTH) // SQUARE_AREA)
+
+                selected_piece.move(row, col)
+                selected_piece = None
 
     gameDisplay.blit(bg, (0, 0))
     team_text = font.render(BUILD_VER, True, (0, 0, 0)) # This is how I rendered the font and determined the RGB value
     gameDisplay.blit(team_text, (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10))
     create_board(BOARD, WHITE_COLOR, BLACK_COLOR)
     gameDisplay.blit(BOARD, (200,100)) # I changed the coordinates to the exact middle here 
-    red_piece_set, black_piece_set = create_pieces(red_piece, black_piece, 200, 100)
-    gameDisplay.blits(red_piece_set)
-    gameDisplay.blits(black_piece_set)
+    
+    red_piece_set.draw(gameDisplay)
+    black_piece_set.draw(gameDisplay)
     pygame.display.flip()
 
 pygame.quit()
