@@ -147,10 +147,13 @@ while running:
 
 
     # Board
+    board_x = (WIDTH - BOARD_SIZE) // 2
+    board_y = (HEIGHT - BOARD_SIZE) // 2
+
     gameDisplay.blit(
-        BOARD,
-        (213, 113)
-    )
+    BOARD,
+    (board_x, board_y)
+)
 
 
     # Pieces
