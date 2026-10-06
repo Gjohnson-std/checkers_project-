@@ -70,12 +70,13 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            #select piece of no peice is selected
         if event.type == pygame.MOUSEBUTTONDOWN:
             position = pygame.mouse.get_pos()
             if selected_piece is None:
+                #if piece not selected 
                 for piece in red_piece_set.sprites() + black_piece_set.sprites():
                     if piece.rect.collidepoint(position):
+                        #chooses selected piece if piece is clicked
                         selected_piece = piece
                         break
             else:
@@ -84,9 +85,12 @@ while running:
 
                 col = int((mouse_x - 200 - BOARDER_LENGTH) // SQUARE_AREA)
                 row = int((mouse_y - 100 - BOARDER_LENGTH) // SQUARE_AREA)
+                #gets the mouse coordinates and the board position
 
                 selected_piece.move(row, col)
+                #moves piece to the clicked square (doesn't need to be empty but that can be fixed later)
                 selected_piece = None
+                #deselects piece after movement is completed
 
     gameDisplay.blit(bg, (0, 0))
     team_text = font.render(BUILD_VER, True, (0, 0, 0)) # This is how I rendered the font and determined the RGB value

@@ -45,11 +45,13 @@ class CheckerPiece(pygame.sprite.Sprite):
         self.rect.y = self.row * self.sa + self.bl + self.by
 
     def move(self, new_row, new_col):
+        #for moving piece to new square
         self.row = new_row
         self.col = new_col
         self.update_position()
 
     def king_me(self):
+        #for pieces that reach the opposite end of the board
         self.king = True
         self.image = self.imgk
 
