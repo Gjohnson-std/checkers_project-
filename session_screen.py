@@ -1,5 +1,6 @@
 import pygame
 
+#making buttons for each joinable session
 class Button:
     def __init__(self, surface, x, y, w, h, text, onClick):
         self.surface = surface
@@ -14,6 +15,7 @@ class Button:
 
         label = self.font.render(self.text, True, (0,0,0))
         self.surface.blit(label, (self.rect.x + 10, self.rect.y + 5))
+        #making buttons
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:

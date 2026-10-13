@@ -49,7 +49,6 @@ def create_board(BOARD, RED_COLOR, BLACK_COLOR):
                 pygame.draw.rect(BOARD, BLACK_COLOR, (column * SQUARE_AREA + BOARDER_LENGTH, row * SQUARE_AREA + BOARDER_LENGTH, SQUARE_AREA, SQUARE_AREA) )
     pygame.draw.rect(BOARD, TAN_COLOR, (0, 0, BOARD_SIZE, BOARD_SIZE), 5)
 
-
 all_pieces = CreateCheckerPieceSet(SQUARE_AREA, BOARDER_LENGTH, board_x, board_y)
 red_piece_set, black_piece_set = all_pieces.create_piecestest()
 
@@ -125,31 +124,26 @@ while running:
         title = tfont.render("[Checkers Title Page]", True, (0,0,0))
         gameDisplay.blit(title, (180, 150))
         join_button.draw()
+        #join screen
 
     elif current_screen == "sessions":
         title = tfont.render("Available Sessions", True, (0,0,0))
         gameDisplay.blit(title, (200, 100))
         for btn in session_buttons:
             btn.draw()
+        #displays sessions, just fillers for now
 
     elif current_screen == "game":
         gameDisplay.blit(bg, (0, 0))
         team_text = font.render(BUILD_VER, True, (0, 0, 0))
         gameDisplay.blit(team_text, (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10))
-
+        #version game text
         create_board(BOARD, WHITE_COLOR, BLACK_COLOR)
         gameDisplay.blit(BOARD, (200,100))
-
+        #creating board
         red_piece_set.draw(gameDisplay)
         black_piece_set.draw(gameDisplay)
-   
-    #team_text = font.render(BUILD_VER, True, (0, 0, 0)) # This is how I rendered the font and determined the RGB value
-    #gameDisplay.blit(team_text, (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10))
-    #create_board(BOARD, WHITE_COLOR, BLACK_COLOR)
-    #gameDisplay.blit(BOARD, (200,100)) # I changed the coordinates to the exact middle here 
-    
-    #red_piece_set.draw(gameDisplay)
-    #black_piece_set.draw(gameDisplay)
+        #creating pieces
     pygame.display.flip()
 
 pygame.quit()
