@@ -1,155 +1,260 @@
-from pathlib import Path 
-from config import RED_COLOR, BLACK_COLOR, TAN_COLOR, WHITE_COLOR
-from pieces import  CheckerPiece, CreateCheckerPieceSet
-from session_screen import Button
+from pathlib import Path
+
 import pygame
-import pandas as pd
-import customtkinter as tk
-import coverage
+
+from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
+from pieces import (
+    red_piece,
+    black_piece,
+    create_red_pieces,
+    create_black_pieces
+)
+from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
+
 
 pygame.init()
 
-# Base directory finds the path for the parent folder where file is stored 
-BASE_DIR = Path(__file__).resolve().parent
 
-# Updated path using pathlib to pull the assets dynamically 
-bg_path = BASE_DIR / "Assets" / "bg.jpg"
+# --------------------------------------------------
+# Window configuration
+# --------------------------------------------------
 
-WIDTH, HEIGHT = 800, 600  # Change these numbers to match your desired window size
+WIDTH = 1920
+HEIGHT = 1080
+
 gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Troubleshooters: Checkers Game")
+
+
+# --------------------------------------------------
+# Asset paths
+# --------------------------------------------------
+
+BASE_DIR = Path(__file__).resolve().parent
+
+bg_path = BASE_DIR / "Assets" / "bg.jpg"
+
+
+# --------------------------------------------------
+# Background
+# --------------------------------------------------
 
 bg = pygame.image.load(bg_path)
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 
-font = pygame.font.Font(None, 25) # Placeholder font can be changed later to a system font 
+
+# --------------------------------------------------
+# Text
+# --------------------------------------------------
+
+font = pygame.font.Font(None, 25)
+title_font = pygame.font.Font(None, 72)
+ui_font = pygame.font.Font(None, 42)
+field_font = pygame.font.Font(None, 36)
+status_font = pygame.font.Font(None, 28)
+
 BUILD_VER = "troubleshooters-cg-v0.0.1 - alpha"
 
-tfont = pygame.font.Font(None, 60)
 
-## Checker Board Configurations 
-BOARD_SIZE = 410
+# --------------------------------------------------
+# Board configuration
+# --------------------------------------------------
+
+BOARD_SIZE = 375
 BOARD_ROWS = 8
-BOARD_COLS = 8 
-BOARDER_LENGTH = 5
-#adding 5 on every side to account for the boarder
+BOARD_COLS = 8
+SQUARE_SIZE = BOARD_SIZE / BOARD_COLS
+
 BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
-SQUARE_AREA = (BOARD_SIZE - (BOARDER_LENGTH * 2)) / BOARD_ROWS
-#area of every space
-board_x, board_y = 200, 100
-#middle of board
+board_x = (WIDTH - BOARD_SIZE) // 2
+board_y = (HEIGHT - BOARD_SIZE) // 2
 
-#CREATING BOARD
-def create_board(BOARD, RED_COLOR, BLACK_COLOR):
-    for row in range(8):
-        for column in range(8):
+def create_board():
+    """
+    Draws the checkerboard onto BOARD.
+    """
+
+    for row in range(BOARD_ROWS):
+        for column in range(BOARD_COLS):
+
             if (row + column) % 2 == 0:
-                pygame.draw.rect(BOARD, RED_COLOR, (column * SQUARE_AREA + BOARDER_LENGTH, row * SQUARE_AREA + BOARDER_LENGTH, SQUARE_AREA, SQUARE_AREA) )
+                color = WHITE_COLOR
             else:
-                pygame.draw.rect(BOARD, BLACK_COLOR, (column * SQUARE_AREA + BOARDER_LENGTH, row * SQUARE_AREA + BOARDER_LENGTH, SQUARE_AREA, SQUARE_AREA) )
-    pygame.draw.rect(BOARD, TAN_COLOR, (0, 0, BOARD_SIZE, BOARD_SIZE), 5)
+                color = BLACK_COLOR
 
-all_pieces = CreateCheckerPieceSet(SQUARE_AREA, BOARDER_LENGTH, board_x, board_y)
-red_piece_set, black_piece_set = all_pieces.create_piecestest()
+            pygame.draw.rect(
+                BOARD,
+                color,
+                (
+                    column * SQUARE_SIZE,
+                    row * SQUARE_SIZE,
+                    SQUARE_SIZE,
+                    SQUARE_SIZE
+                )
+            )
 
-current_screen = "join"
-
-def go_to_sessions():
-    global current_screen
-    current_screen = "sessions"
-
-join_button = Button(gameDisplay, 300, 250, 200, 60, "Join Game", go_to_sessions)
-
-available_sessions = ["Session A", "Session B", "Session C"]
-session_buttons = []
-
-def join_specific_session(name):
-    global current_screen
-    print("Joining:", name)
-    current_screen = "game"
-
-# Create buttons dynamically
-y = 200
-for session in available_sessions:
-    session_buttons.append(
-        Button(gameDisplay, 300, y, 250, 50, session, lambda s=session: join_specific_session(s))
+    pygame.draw.rect(
+        BOARD,
+        TAN_COLOR,
+        (0, 0, BOARD_SIZE, BOARD_SIZE),
+        5
     )
-    y += 70
 
 
-selected_piece = None
-# --- GAME LOOP ---
+# --------------------------------------------------
+# Create board
+# --------------------------------------------------
+
+create_board()
+
+
+# --------------------------------------------------
+# Create pieces
+# --------------------------------------------------
+
+red_piece_set = create_red_pieces(red_piece, board_x, board_y)
+black_piece_set = create_black_pieces(black_piece, board_x, board_y)
+
+
+# --------------------------------------------------
+# Game loop
+# --------------------------------------------------
+
 running = True
+screen = "home"
+username = ""
+password = ""
+active_field = "username"
+status_message = ""
+
+login_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2, 220, 64)
+username_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 90, 500, 58)
+password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
+submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
+back_button = pygame.Rect(40, 40, 130, 52)
+
+
+def attempt_login():
+    global screen, status_message
+
+    if not username or not password:
+        status_message = "Enter both a username and password."
+        return
+
+    try:
+        save_credentials(username, password)
+    except (OSError, ValueError, UnicodeDecodeError) as error:
+        status_message = f"Could not save login: {error}"
+        return
+
+    status_message = "Login saved."
+    screen = "game"
+    pygame.key.stop_text_input()
+
+
+def draw_centered_text(text, text_font, color, y):
+    rendered_text = text_font.render(text, True, color)
+    gameDisplay.blit(
+        rendered_text,
+        (WIDTH // 2 - rendered_text.get_width() // 2, y),
+    )
+
+
+def draw_button(rect, label):
+    pygame.draw.rect(gameDisplay, TAN_COLOR, rect, border_radius=8)
+    pygame.draw.rect(gameDisplay, BLACK_COLOR, rect, 3, border_radius=8)
+    rendered_label = ui_font.render(label, True, BLACK_COLOR)
+    gameDisplay.blit(
+        rendered_label,
+        (
+            rect.centerx - rendered_label.get_width() // 2,
+            rect.centery - rendered_label.get_height() // 2,
+        ),
+    )
+
 while running:
+
     for event in pygame.event.get():
+
         if event.type == pygame.QUIT:
-            #for xing out of window
             running = False
-        # Button to join a game
-        if current_screen == "join":
-            join_button.handle_event(event)
-        # available games to join
-        elif current_screen == "sessions":
-            for btn in session_buttons:
-                btn.handle_event(event)
-        # actual game
-        elif current_screen == "game":
-            # draw board + pieces
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                position = pygame.mouse.get_pos()
-                if selected_piece is None:
-                    #if piece not selected 
-                    for piece in red_piece_set.sprites() + black_piece_set.sprites():
-                        if piece.rect.collidepoint(position):
-                            #chooses selected piece if piece is clicked
-                            selected_piece = piece
-                            break
+
+        elif screen == "home" and event.type == pygame.MOUSEBUTTONDOWN:
+            if login_button.collidepoint(event.pos):
+                screen = "login"
+                username = ""
+                password = ""
+                active_field = "username"
+                status_message = ""
+                pygame.key.start_text_input()
+
+        elif screen == "login" and event.type == pygame.MOUSEBUTTONDOWN:
+            if back_button.collidepoint(event.pos):
+                screen = "home"
+                pygame.key.stop_text_input()
+            elif username_field.collidepoint(event.pos):
+                active_field = "username"
+            elif password_field.collidepoint(event.pos):
+                active_field = "password"
+            elif submit_button.collidepoint(event.pos):
+                attempt_login()
+
+        elif screen == "login" and event.type == pygame.TEXTINPUT:
+            if active_field == "username" and len(username) < MAX_CREDENTIAL_LENGTH:
+                username += event.text[:MAX_CREDENTIAL_LENGTH - len(username)]
+            elif active_field == "password" and len(password) < MAX_CREDENTIAL_LENGTH:
+                password += event.text[:MAX_CREDENTIAL_LENGTH - len(password)]
+
+        elif screen == "login" and event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                if active_field == "username":
+                    username = username[:-1]
                 else:
-                    #if piece is selected, move it
-                    mouse_x, mouse_y = position
+                    password = password[:-1]
+            elif event.key == pygame.K_TAB:
+                active_field = "password" if active_field == "username" else "username"
+            elif event.key == pygame.K_RETURN:
+                attempt_login()
 
-                    col = int((mouse_x - 200 - BOARDER_LENGTH) // SQUARE_AREA)
-                    row = int((mouse_y - 100 - BOARDER_LENGTH) // SQUARE_AREA)
-                    #gets the mouse coordinates and the board position
-
-                    selected_piece.move(row, col)
-                    #moves piece to the clicked square (doesn't need to be empty but that can be fixed later)
-                    selected_piece = None
-                    #deselects piece after movement is completed
-
-    
     gameDisplay.blit(bg, (0, 0))
 
-    if current_screen == "join":
-        title = tfont.render("[Checkers Title Page]", True, (0,0,0))
-        gameDisplay.blit(title, (180, 150))
-        join_button.draw()
-        #join screen
+    if screen == "home":
+        draw_centered_text("Troubleshooters: Checkers Game", title_font, BLACK_COLOR, HEIGHT // 2 - 130)
+        draw_button(login_button, "login")
+    elif screen == "login":
+        draw_centered_text("Login", title_font, BLACK_COLOR, HEIGHT // 2 - 230)
+        draw_button(back_button, "Back")
 
-    elif current_screen == "sessions":
-        title = tfont.render("Available Sessions", True, (0,0,0))
-        gameDisplay.blit(title, (200, 100))
-        for btn in session_buttons:
-            btn.draw()
-        #displays sessions, just fillers for now
+        for rect, label, value, field_name in (
+            (username_field, "Username", username, "username"),
+            (password_field, "Password", "*" * len(password), "password"),
+        ):
+            pygame.draw.rect(gameDisplay, WHITE_COLOR, rect, border_radius=6)
+            border_color = TAN_COLOR if active_field == field_name else BLACK_COLOR
+            pygame.draw.rect(gameDisplay, border_color, rect, 3, border_radius=6)
+            shown_text = value or label
+            text_color = BLACK_COLOR if value else (110, 110, 110)
+            rendered_value = field_font.render(shown_text, True, text_color)
+            gameDisplay.blit(
+                rendered_value,
+                (rect.x + 14, rect.centery - rendered_value.get_height() // 2),
+            )
 
-    elif current_screen == "game":
-        gameDisplay.blit(bg, (0, 0))
-        team_text = font.render(BUILD_VER, True, (0, 0, 0))
-        gameDisplay.blit(team_text, (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10))
-        #version game text
-        create_board(BOARD, WHITE_COLOR, BLACK_COLOR)
-        gameDisplay.blit(BOARD, (200,100))
-        #creating board
-        red_piece_set.draw(gameDisplay)
-        black_piece_set.draw(gameDisplay)
-        #creating pieces
+        draw_button(submit_button, "Save & Play")
+        if status_message:
+            draw_centered_text(status_message, status_font, BLACK_COLOR, submit_button.bottom + 18)
+    else:
+        gameDisplay.blit(BOARD, (board_x, board_y))
+        gameDisplay.blits(red_piece_set)
+        gameDisplay.blits(black_piece_set)
+
+    team_text = font.render(BUILD_VER, True, BLACK_COLOR)
+    gameDisplay.blit(
+        team_text,
+        (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10),
+    )
+
     pygame.display.flip()
 
+
 pygame.quit()
-import pygame
-import pandas as pd
-import customtkinter as tk
-
-pygame.init()
-
