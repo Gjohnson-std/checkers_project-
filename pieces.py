@@ -33,7 +33,7 @@ red_king = image_resize(rpk, 46.875)
 # Starting positions
 # --------------------------------------------------
 
-def create_red_pieces(piece):
+def create_red_pieces(piece, board_x, board_y):
     red_piece_set = []
 
     for row in range(3):
@@ -42,8 +42,8 @@ def create_red_pieces(piece):
             # Only place pieces on black squares
             if (row + col) % 2 != 0:
                 rect = pygame.Rect(
-                    col * 46.875,
-                    row * 46.875,
+                    board_x + col * 46.875,
+                    board_y + row * 46.875,
                     46.875,
                     46.875
                 )
@@ -53,7 +53,7 @@ def create_red_pieces(piece):
     return red_piece_set
 
 
-def create_black_pieces(piece):
+def create_black_pieces(piece, board_x, board_y):
     black_piece_set = []
 
     for row in range(5, 8):
@@ -62,8 +62,8 @@ def create_black_pieces(piece):
             # Only place pieces on black squares
             if (row + col) % 2 != 0:
                 rect = pygame.Rect(
-                    col * 46.875,
-                    row * 46.875,
+                    board_x + col * 46.875,
+                    board_y + row * 46.875,
                     46.875,
                     46.875
                 )
