@@ -10,8 +10,6 @@ from pieces import (
     create_black_pieces
 )
 from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
-from sessions import SessionButton, session_ID
-
 
 
 pygame.init()
@@ -150,8 +148,7 @@ def attempt_login():
         return
 
     status_message = "Login saved."
-    #screen = "game"
-    screen = "session"
+    screen = "game"
     pygame.key.stop_text_input()
 
 
@@ -175,24 +172,8 @@ def draw_button(rect, label):
         ),
     )
 
-#-----------------------------------------------------
-#Session Joining
-session_buttons = []
-start_y = HEIGHT // 2 - 40
-
-for name in session_ID:
-    rect = pygame.Rect(WIDTH // 2 - 150, start_y, 300, 50)
-    session_buttons.append(SessionButton(rect, name))
-    start_y += 70
-
-#-----------------------------------------------------
-all_pieces = pygame.sprite.Group()
-all_pieces.add(red_piece_set)
-all_pieces.add(black_piece_set)
-selected_piece = None
-
 while running:
-    
+
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
@@ -235,31 +216,6 @@ while running:
             elif event.key == pygame.K_RETURN:
                 attempt_login()
 
-        elif screen == "session" and event.type == pygame.MOUSEBUTTONDOWN:
-            if back_button.collidepoint(event.pos):
-                screen = "home"
-
-            for btn in session_buttons:
-                if btn.is_clicked(event.pos):
-                    selected_session = btn.label
-                    print("Joining:", selected_session)
-                    screen = "game"
-
-        elif screen == "game" and event.type == pygame.MOUSEBUTTONDOWN:
-            x,y = pygame.mouse.get_pos()
-            if selected_piece is None:
-                for piece in all_pieces:
-                    if piece.rect.collidepoint((x,y)):
-                        selected_piece = piece
-                        break
-            else:
-                col = int((x - board_x) // SQUARE_SIZE)
-                row = int((y - board_y) // SQUARE_SIZE)
-
-                selected_piece.move(row, col)
-                selected_piece = None
-
-
     gameDisplay.blit(bg, (0, 0))
 
     if screen == "home":
@@ -287,21 +243,10 @@ while running:
         draw_button(submit_button, "Save & Play")
         if status_message:
             draw_centered_text(status_message, status_font, BLACK_COLOR, submit_button.bottom + 18)
-    elif screen == "session":
-        gameDisplay.blit(bg, (0, 0))
-
-        draw_centered_text("Join a Game Session", title_font, BLACK_COLOR, HEIGHT // 2 - 200)
-
-        for btn in session_buttons:
-            btn.draw(gameDisplay, ui_font, TAN_COLOR, BLACK_COLOR, BLACK_COLOR)
-
-        draw_button(back_button, "Back")
-
     else:
         gameDisplay.blit(BOARD, (board_x, board_y))
-        red_piece_set.draw(gameDisplay)
-        black_piece_set.draw(gameDisplay)
-        
+        gameDisplay.blits(red_piece_set)
+        gameDisplay.blits(black_piece_set)
 
     team_text = font.render(BUILD_VER, True, BLACK_COLOR)
     gameDisplay.blit(
