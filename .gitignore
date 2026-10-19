@@ -151,6 +151,7 @@ activemq-data/
 .env
 .envrc
 .venv
+users.csv
 env/
 venv/
 ENV/

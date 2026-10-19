@@ -1,8 +1,8 @@
-from pathlib import Path 
-from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR, RED_COLOR
+from pathlib import Path
+
 import pygame
-import pandas as pd
-import customtkinter as tk
+
+from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
 from pieces import (
     red_piece,
     black_piece,
