@@ -124,7 +124,3 @@ def create_black_pieces(piece, board_x, board_y):
         piece.set_pieceID(index, "Black")
 
     return black_pieces
-
-                black_piece_set.append((piece, rect))
-
-    return black_piece_set

@@ -1,17 +1,10 @@
 from pathlib import Path
-
 import pygame
-
 from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
-from pieces import (
-    red_piece,
-    black_piece,
-    create_red_pieces,
-    create_black_pieces
-)
+from pieces import ( red_piece, black_piece, create_red_pieces, create_black_pieces)
 from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
 from sessions import SessionButton, session_ID
-
+from select_session import host_game_button, join_session_button, session_load_screen
 
 
 pygame.init()
@@ -54,6 +47,7 @@ title_font = pygame.font.Font(None, 72)
 ui_font = pygame.font.Font(None, 42)
 field_font = pygame.font.Font(None, 36)
 status_font = pygame.font.Font(None, 28)
+
 
 BUILD_VER = "troubleshooters-cg-v0.0.1 - alpha"
 
@@ -150,10 +144,8 @@ def attempt_login():
         return
 
     status_message = "Login saved."
-    #screen = "game"
-    screen = "session"
+    screen = "session_select"  # Navigate to the session selection screen after login
     pygame.key.stop_text_input()
-
 
 def draw_centered_text(text, text_font, color, y):
     rendered_text = text_font.render(text, True, color)
@@ -235,9 +227,17 @@ while running:
             elif event.key == pygame.K_RETURN:
                 attempt_login()
 
-        elif screen == "session" and event.type == pygame.MOUSEBUTTONDOWN:
+        elif screen == "session_select" and event.type == pygame.MOUSEBUTTONDOWN:
             if back_button.collidepoint(event.pos):
                 screen = "home"
+            elif host_game_button.collidepoint(event.pos):
+                screen = "game"
+            elif join_session_button.collidepoint(event.pos):
+                screen = "session"
+
+        elif screen == "session" and event.type == pygame.MOUSEBUTTONDOWN:
+            if back_button.collidepoint(event.pos):
+                screen = "session_select"
 
             for btn in session_buttons:
                 if btn.is_clicked(event.pos):
@@ -287,6 +287,11 @@ while running:
         draw_button(submit_button, "Save & Play")
         if status_message:
             draw_centered_text(status_message, status_font, BLACK_COLOR, submit_button.bottom + 18)
+    elif screen == "session_select":
+        gameDisplay.blit(bg, (0, 0))
+        draw_centered_text("Start a Match", title_font, BLACK_COLOR, HEIGHT // 2 - 200)
+        session_load_screen(gameDisplay, title_font, ui_font)
+        draw_button(back_button, "Back")
     elif screen == "session":
         gameDisplay.blit(bg, (0, 0))
 
