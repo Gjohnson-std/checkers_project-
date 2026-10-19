@@ -6,16 +6,13 @@ bp = pygame.image.load("checker_pieces_drawings/black_p.png")
 rpk = pygame.image.load("checker_pieces_drawings/red_king_p.png")
 rp = pygame.image.load("checker_pieces_drawings/red_p.png")
 
-
+#changing inage scale
 # --------------------------------------------------
 # Image resizing
 # --------------------------------------------------
 
 def image_resize(img, resize_val):
-    return pygame.transform.smoothscale(
-        img,
-        (resize_val, resize_val)
-    )
+    return pygame.transform.smoothscale(img, (resize_val, resize_val))
 
 
 # --------------------------------------------------
