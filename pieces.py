@@ -125,6 +125,6 @@ def create_black_pieces(piece, board_x, board_y):
 
     return black_pieces
 
-                black_piece_set.append((piece, rect))
+    black_piece_set.append((piece, rect))
 
     return black_piece_set
