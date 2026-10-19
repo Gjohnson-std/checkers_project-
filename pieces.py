@@ -123,4 +123,4 @@ def create_black_pieces(piece, board_x, board_y):
     for index, piece in enumerate(black_pieces):
         piece.set_pieceID(index, "Black")
 
-    return black_pieces
+    return black_pieces 
