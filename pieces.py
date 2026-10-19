@@ -1,6 +1,6 @@
-import pygame
+import pygame 
 
-# All images of the pieces
+#All images of the pieces
 bpk = pygame.image.load("checker_pieces_drawings/black_king_p.png")
 bp = pygame.image.load("checker_pieces_drawings/black_p.png")
 rpk = pygame.image.load("checker_pieces_drawings/red_king_p.png")

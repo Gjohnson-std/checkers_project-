@@ -1,5 +1,5 @@
 from pathlib import Path 
-from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
+from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR, RED_COLOR
 import pygame
 import pandas as pd
 import customtkinter as tk
