@@ -43,6 +43,23 @@ bg_path = BASE_DIR / "Assets" / "bg.jpg"
 bg = pygame.image.load(bg_path)
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 
+ASSETS_DIR = BASE_DIR / "Assets"
+
+
+def load_asset(filename, size, alpha=True):
+    """Loads an image from Assets/ and scales it to size."""
+    image = pygame.image.load(ASSETS_DIR / filename)
+    image = image.convert_alpha() if alpha else image.convert()
+    return pygame.transform.scale(image, size)
+
+
+# Home screen images (loaded once, after the display exists)
+title_bg = load_asset("titlebg.png", (WIDTH, HEIGHT), alpha=False)
+title_img = load_asset("Title.png", (700, 350))
+login_img = load_asset("Login.png", (320, 140))
+settings_img = load_asset("Settings.png", (320, 140))
+exit_img = load_asset("Exit.png", (320, 140))
+
 
 # --------------------------------------------------
 # Text
@@ -140,7 +157,12 @@ selected_session = None
 # UI rectangles
 # --------------------------------------------------
 
-login_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2, 220, 64)
+# Home screen button rects (positions taken from home.py)
+title_rect = title_img.get_rect(center=(WIDTH // 2, 220))
+login_rect = login_img.get_rect(center=(WIDTH // 2, 520))
+settings_rect = settings_img.get_rect(center=(WIDTH // 2, 700))
+exit_rect = exit_img.get_rect(center=(WIDTH // 2, 880))
+
 username_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 90, 500, 58)
 password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
 submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
@@ -236,19 +258,44 @@ def attempt_login():
 # Home screen
 # --------------------------------------------------
 
+def home_login():
+    go_to("login")
+
+
+def home_settings():
+    # No settings screen yet: add "settings" to the dispatch tables later.
+    print("Settings screen not implemented yet")
+
+
+def home_exit():
+    global running
+    running = False
+
+
+# button rect -> action
+HOME_BUTTONS = (
+    (login_rect, home_login),
+    (settings_rect, home_settings),
+    (exit_rect, home_exit),
+)
+
+
 def handle_home(event):
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
-    if login_button.collidepoint(event.pos):
-        go_to("login")
+    for rect, action in HOME_BUTTONS:
+        if rect.collidepoint(event.pos):
+            action()
+            return
 
 
 def draw_home():
-    draw_centered_text(
-        "Troubleshooters: Checkers Game", title_font, BLACK_COLOR, HEIGHT // 2 - 130
-    )
-    draw_button(login_button, "login")
+    gameDisplay.blit(title_bg, (0, 0))
+    gameDisplay.blit(title_img, title_rect)
+    gameDisplay.blit(login_img, login_rect)
+    gameDisplay.blit(settings_img, settings_rect)
+    gameDisplay.blit(exit_img, exit_rect)
 
 
 # --------------------------------------------------
@@ -464,3 +511,4 @@ while running:
 
 
 pygame.quit()
+
