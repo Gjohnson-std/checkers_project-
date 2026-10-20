@@ -1,7 +1,7 @@
 import pygame
 
 #each session ID will be shown to the player trying to join
-session_ID = ["Session A", "Session B", "Session B"]
+session_ID = ["Session A", "Session B", "Session C"]
 
 #making buttons for each joinable session
 class SessionButton:
