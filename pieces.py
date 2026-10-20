@@ -88,8 +88,8 @@ def create_red_pieces(piece, board_x, board_y):
             # Only place pieces on black squares
             if (row + col) % 2 != 0:
                 rect = pygame.Rect(
-                    board_x + col * 46.875,
-                    board_y + row * 46.875,
+                    col * 46.875,
+                    row * 46.875,
                     46.875,
                     46.875
                 )
@@ -111,8 +111,8 @@ def create_black_pieces(piece, board_x, board_y):
             # Only place pieces on black squares
             if (row + col) % 2 != 0:
                 rect = pygame.Rect(
-                    board_x + col * 46.875,
-                    board_y + row * 46.875,
+                    col * 46.875,
+                    row * 46.875,
                     46.875,
                     46.875
                 )

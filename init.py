@@ -15,8 +15,8 @@ pygame.init()
 # Window configuration
 # --------------------------------------------------
 
-WIDTH = 1920
-HEIGHT = 1080
+WIDTH = 800
+HEIGHT = 600
 
 gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Troubleshooters: Checkers Game")
@@ -44,10 +44,6 @@ bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 # --------------------------------------------------
 
 font = pygame.font.Font(None, 25)
-title_font = pygame.font.Font(None, 72)
-ui_font = pygame.font.Font(None, 42)
-field_font = pygame.font.Font(None, 36)
-status_font = pygame.font.Font(None, 28)
 
 
 BUILD_VER = "troubleshooters-cg-v0.0.1 - alpha"
@@ -63,8 +59,7 @@ BOARD_COLS = 8
 SQUARE_SIZE = BOARD_SIZE / BOARD_COLS
 
 BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
-board_x = (WIDTH - BOARD_SIZE) // 2
-board_y = (HEIGHT - BOARD_SIZE) // 2
+
 
 def create_board():
     """
@@ -109,8 +104,8 @@ create_board()
 # Create pieces
 # --------------------------------------------------
 
-red_piece_set = create_red_pieces(red_piece, board_x, board_y)
-black_piece_set = create_black_pieces(black_piece, board_x, board_y)
+red_piece_set = create_red_pieces(red_piece)
+black_piece_set = create_black_pieces(black_piece)
 
 
 # --------------------------------------------------
@@ -129,19 +124,13 @@ password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
 submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
 back_button = pygame.Rect(40, 40, 130, 52)
 
+while running:
 
-def attempt_login():
-    global screen, status_message
+    for event in pygame.event.get():
 
-    if not username or not password:
-        status_message = "Enter both a username and password."
-        return
+        if event.type == pygame.QUIT:
+            running = False
 
-    try:
-        save_credentials(username, password)
-    except (OSError, ValueError, UnicodeDecodeError) as error:
-        status_message = f"Could not save login: {error}"
-        return
 
     status_message = "Login saved."
     screen = "session_select"  # Navigate to the session selection screen after login
@@ -154,17 +143,12 @@ def draw_centered_text(text, text_font, color, y):
         (WIDTH // 2 - rendered_text.get_width() // 2, y),
     )
 
-
-def draw_button(rect, label):
-    pygame.draw.rect(gameDisplay, TAN_COLOR, rect, border_radius=8)
-    pygame.draw.rect(gameDisplay, BLACK_COLOR, rect, 3, border_radius=8)
-    rendered_label = ui_font.render(label, True, BLACK_COLOR)
     gameDisplay.blit(
-        rendered_label,
+        team_text,
         (
-            rect.centerx - rendered_label.get_width() // 2,
-            rect.centery - rendered_label.get_height() // 2,
-        ),
+            WIDTH - team_text.get_width() - 10,
+            HEIGHT - team_text.get_height() - 10
+        )
     )
 
 #-----------------------------------------------------
@@ -314,12 +298,8 @@ while running:
         black_piece_set.draw(gameDisplay)
         
 
-    team_text = font.render(BUILD_VER, True, BLACK_COLOR)
-    gameDisplay.blit(
-        team_text,
-        (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10),
-    )
 
+    # Update display
     pygame.display.flip()
 
 
