@@ -5,6 +5,7 @@ from pieces import ( red_piece, black_piece, create_red_pieces, create_black_pie
 from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
 from sessions import SessionButton, session_ID
 from select_session import host_game_button, join_session_button, session_load_screen
+from home import run_home_screen
 
 
 pygame.init()
@@ -123,7 +124,6 @@ password = ""
 active_field = "username"
 status_message = ""
 
-login_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2, 220, 64)
 username_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 90, 500, 58)
 password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
 submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
@@ -184,21 +184,25 @@ all_pieces.add(black_piece_set)
 selected_piece = None
 
 while running:
-    
+    if screen == "home":
+        result = run_home_screen(gameDisplay)
+        if result == "login":
+            screen = "login"
+            username = ""
+            password = ""
+            active_field = "username"
+            status_message = ""
+            pygame.key.start_text_input()
+        elif result == "settings":
+            screen = "settings"
+        elif result == "exit":
+            running = False
+        continue
+
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
             running = False
-
-        elif screen == "home" and event.type == pygame.MOUSEBUTTONDOWN:
-            if login_button.collidepoint(event.pos):
-                screen = "login"
-                username = ""
-                password = ""
-                active_field = "username"
-                status_message = ""
-                pygame.key.start_text_input()
-
         elif screen == "login" and event.type == pygame.MOUSEBUTTONDOWN:
             if back_button.collidepoint(event.pos):
                 screen = "home"
@@ -226,6 +230,9 @@ while running:
                 active_field = "password" if active_field == "username" else "username"
             elif event.key == pygame.K_RETURN:
                 attempt_login()
+        elif screen == "settings" and event.type == pygame.MOUSEBUTTONDOWN:
+            if back_button.collidepoint(event.pos):
+                screen = "home"
 
         elif screen == "session_select" and event.type == pygame.MOUSEBUTTONDOWN:
             if back_button.collidepoint(event.pos):
@@ -261,11 +268,7 @@ while running:
 
 
     gameDisplay.blit(bg, (0, 0))
-
-    if screen == "home":
-        draw_centered_text("Troubleshooters: Checkers Game", title_font, BLACK_COLOR, HEIGHT // 2 - 130)
-        draw_button(login_button, "login")
-    elif screen == "login":
+    if screen == "login":
         draw_centered_text("Login", title_font, BLACK_COLOR, HEIGHT // 2 - 230)
         draw_button(back_button, "Back")
 
@@ -287,6 +290,9 @@ while running:
         draw_button(submit_button, "Save & Play")
         if status_message:
             draw_centered_text(status_message, status_font, BLACK_COLOR, submit_button.bottom + 18)
+    elif screen == "settings":
+        draw_centered_text( "Settings", title_font, BLACK_COLOR, HEIGHT // 2 - 200)
+        draw_button(back_button, "Back")
     elif screen == "session_select":
         gameDisplay.blit(bg, (0, 0))
         draw_centered_text("Start a Match", title_font, BLACK_COLOR, HEIGHT // 2 - 200)
