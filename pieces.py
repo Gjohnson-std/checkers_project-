@@ -17,11 +17,6 @@ def image_resize(img, resize_val):
         (resize_val, resize_val)
     )
 
-
-# --------------------------------------------------
-# Resized pieces
-# --------------------------------------------------
-
 # --------------------------------------------------
 # Resized pieces
 # --------------------------------------------------
@@ -74,53 +69,32 @@ class CheckerPiece(pygame.sprite.Sprite):
         """Sets the Piece Name so that it can be logged and identified"""
         self.pieceID = piece_type + " " + str(piece_number)
 
+
 # --------------------------------------------------
 # Starting positions
 # --------------------------------------------------
 
-def create_red_pieces(piece, board_x, board_y):
-    #red_piece_set = []
+def create_red_pieces(board_x, board_y):
     red_pieces = pygame.sprite.Group()
-
     for row in range(3):
-
         for col in range(8):
-            # Only place pieces on black squares
             if (row + col) % 2 != 0:
-                rect = pygame.Rect(
-                    col * 46.875,
-                    row * 46.875,
-                    46.875,
-                    46.875
-                )
                 red_pieces.add(CheckerPiece("", red_piece, red_king, board_x, board_y, row, col, 46.875))
-                #red_piece_set.append((piece, rect))
-
+                #create each red piece at starting position
     for index, piece in enumerate(red_pieces):
         piece.set_pieceID(index, "Red")
-
+        #name each red piece
     return red_pieces
 
 
-def create_black_pieces(piece, board_x, board_y):
-    #black_piece_set = []
+def create_black_pieces(board_x, board_y):
     black_pieces = pygame.sprite.Group()
     for row in range(5, 8):
         for col in range(8):
-
-            # Only place pieces on black squares
             if (row + col) % 2 != 0:
-                rect = pygame.Rect(
-                    col * 46.875,
-                    row * 46.875,
-                    46.875,
-                    46.875
-                )
                 black_pieces.add(CheckerPiece("", black_piece, black_king, board_x, board_y, row, col, 46.875))
-
-                #black_piece_set.append((piece, rect))
-    
+                #creating black pieces in starting positions
     for index, piece in enumerate(black_pieces):
         piece.set_pieceID(index, "Black")
-
+        #name each black piece
     return black_pieces 
