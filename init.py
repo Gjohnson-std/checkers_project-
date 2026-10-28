@@ -1,14 +1,9 @@
 from pathlib import Path
 
 import pygame
-
-from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
-from pieces import (
-    red_piece,
-    black_piece,
-    create_red_pieces,
-    create_black_pieces
-)
+from board import create_board, BOARD, SQUARE_SIZE, board_x, board_y
+from config import *
+from pieces import (create_all_pieces)
 from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
 from sessions import SessionButton, session_ID
 
@@ -19,9 +14,6 @@ pygame.init()
 # --------------------------------------------------
 # Window configuration
 # --------------------------------------------------
-
-WIDTH = 1920
-HEIGHT = 1080
 
 gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Troubleshooters: Checkers Game")
@@ -73,70 +65,14 @@ status_font = pygame.font.Font(None, 28)
 
 BUILD_VER = "troubleshooters-cg-v0.0.1 - alpha"
 
-
-# --------------------------------------------------
-# Board configuration
-# --------------------------------------------------
-
-BOARD_SIZE = 375
-BOARD_ROWS = 8
-BOARD_COLS = 8
-SQUARE_SIZE = BOARD_SIZE / BOARD_COLS
-
-BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
-board_x = (WIDTH - BOARD_SIZE) // 2
-board_y = (HEIGHT - BOARD_SIZE) // 2
+GAME_CREATION = {
+    "board": create_board,
+    "pieces": create_all_pieces
+}
 
 
-def create_board():
-    """
-    Draws the checkerboard onto BOARD.
-    """
-
-    for row in range(BOARD_ROWS):
-        for column in range(BOARD_COLS):
-
-            if (row + column) % 2 == 0:
-                color = WHITE_COLOR
-            else:
-                color = BLACK_COLOR
-
-            pygame.draw.rect(
-                BOARD,
-                color,
-                (
-                    column * SQUARE_SIZE,
-                    row * SQUARE_SIZE,
-                    SQUARE_SIZE,
-                    SQUARE_SIZE
-                )
-            )
-
-    pygame.draw.rect(
-        BOARD,
-        TAN_COLOR,
-        (0, 0, BOARD_SIZE, BOARD_SIZE),
-        5
-    )
-
-
-# --------------------------------------------------
-# Create board
-# --------------------------------------------------
-
-create_board()
-
-
-# --------------------------------------------------
-# Create pieces
-# --------------------------------------------------
-
-red_piece_set = create_red_pieces(red_piece, board_x, board_y)
-black_piece_set = create_black_pieces(black_piece, board_x, board_y)
-
-all_pieces = pygame.sprite.Group()
-all_pieces.add(red_piece_set)
-all_pieces.add(black_piece_set)
+GAME_CREATION["board"]()
+all_pieces = GAME_CREATION["pieces"]()
 
 
 # --------------------------------------------------
@@ -511,4 +447,3 @@ while running:
 
 
 pygame.quit()
-

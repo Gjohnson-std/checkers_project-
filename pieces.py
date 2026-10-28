@@ -1,5 +1,5 @@
 import pygame
-
+from config import *  
 # All images of the pieces
 bpk = pygame.image.load("checker_pieces_drawings/black_king_p.png")
 bp = pygame.image.load("checker_pieces_drawings/black_p.png")
@@ -124,3 +124,12 @@ def create_black_pieces(piece, board_x, board_y):
         piece.set_pieceID(index, "Black")
 
     return black_pieces 
+
+def create_all_pieces():
+    red_piece_set = create_red_pieces(red_piece, board_x, board_y)
+    black_piece_set = create_black_pieces(black_piece, board_x, board_y)
+
+    all_pieces = pygame.sprite.Group()
+    all_pieces.add(red_piece_set)
+    all_pieces.add(black_piece_set)
+    return all_pieces
