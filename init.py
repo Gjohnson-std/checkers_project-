@@ -1,195 +1,78 @@
-from pathlib import Path
 
 import pygame
-
-from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
-from pieces import (
-    red_piece,
-    black_piece,
-    create_red_pieces,
-    create_black_pieces
-)
-from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
-from sessions import SessionButton, session_ID
-
-
 pygame.init()
 
-
+from config import WIDTH, HEIGHT 
 # --------------------------------------------------
 # Window configuration
 # --------------------------------------------------
-
-WIDTH = 1920
-HEIGHT = 1080
 
 gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Troubleshooters: Checkers Game")
 
 
-# --------------------------------------------------
-# Asset paths
-# --------------------------------------------------
-
-BASE_DIR = Path(__file__).resolve().parent
-
-bg_path = BASE_DIR / "Assets" / "bg.jpg"
-
-
-# --------------------------------------------------
-# Background
-# --------------------------------------------------
-
-bg = pygame.image.load(bg_path)
-bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
-
-ASSETS_DIR = BASE_DIR / "Assets"
-
-
-def load_asset(filename, size, alpha=True):
-    """Loads an image from Assets/ and scales it to size."""
-    image = pygame.image.load(ASSETS_DIR / filename)
-    image = image.convert_alpha() if alpha else image.convert()
-    return pygame.transform.scale(image, size)
+from config import (
+    WIDTH,
+    HEIGHT,
+    TAN_COLOR,
+    BLACK_COLOR,
+    WHITE_COLOR,
+    SQUARE_SIZE,
+    board_x,
+    board_y,
+    font,
+    title_font,
+    ui_font,
+    field_font,
+    status_font,
+    BUILD_VER,
+    bg,
+    back_button,
+)
 
 
-# Home screen images (loaded once, after the display exists)
-title_bg = load_asset("titlebg.png", (WIDTH, HEIGHT), alpha=False)
-title_img = load_asset("Title.png", (700, 350))
-login_img = load_asset("Login.png", (320, 140))
-settings_img = load_asset("Settings.png", (320, 140))
-exit_img = load_asset("Exit.png", (320, 140))
+import navigate
+
+from board import (
+    BOARD,
+    create_board,
+    create_all_pieces,
+)
 
 
-# --------------------------------------------------
-# Text
-# --------------------------------------------------
+from home import (
+    handle_home,
+    title_bg,
+    title_img,
+    login_img,
+    settings_img,
+    exit_img,
+    title_rect,
+    login_rect,
+    settings_rect,
+    exit_rect,
+)
 
-font = pygame.font.Font(None, 25)
-title_font = pygame.font.Font(None, 72)
-ui_font = pygame.font.Font(None, 42)
-field_font = pygame.font.Font(None, 36)
-status_font = pygame.font.Font(None, 28)
+from login import (
+    handle_login,
+    username_field,
+    password_field,
+    submit_button,
+)
 
-BUILD_VER = "troubleshooters-cg-v0.0.1 - alpha"
+from select_session import (
+    handle_session_click,
+    session_load_screen,
+)
 
-
-# --------------------------------------------------
-# Board configuration
-# --------------------------------------------------
-
-BOARD_SIZE = 375
-BOARD_ROWS = 8
-BOARD_COLS = 8
-SQUARE_SIZE = BOARD_SIZE / BOARD_COLS
-
-BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
-board_x = (WIDTH - BOARD_SIZE) // 2
-board_y = (HEIGHT - BOARD_SIZE) // 2
-
-
-def create_board():
-    """
-    Draws the checkerboard onto BOARD.
-    """
-
-    for row in range(BOARD_ROWS):
-        for column in range(BOARD_COLS):
-
-            if (row + column) % 2 == 0:
-                color = WHITE_COLOR
-            else:
-                color = BLACK_COLOR
-
-            pygame.draw.rect(
-                BOARD,
-                color,
-                (
-                    column * SQUARE_SIZE,
-                    row * SQUARE_SIZE,
-                    SQUARE_SIZE,
-                    SQUARE_SIZE
-                )
-            )
-
-    pygame.draw.rect(
-        BOARD,
-        TAN_COLOR,
-        (0, 0, BOARD_SIZE, BOARD_SIZE),
-        5
-    )
+from sessions import (
+    handle_session,
+    session_buttons,
+)
 
 
 # --------------------------------------------------
-# Create board
-# --------------------------------------------------
-
-create_board()
-
-
-# --------------------------------------------------
-# Create pieces
-# --------------------------------------------------
-
-red_piece_set = create_red_pieces(red_piece, board_x, board_y)
-black_piece_set = create_black_pieces(black_piece, board_x, board_y)
-
-all_pieces = pygame.sprite.Group()
-all_pieces.add(red_piece_set)
-all_pieces.add(black_piece_set)
-
-
-# --------------------------------------------------
-# State
-# --------------------------------------------------
-
-running = True
-screen = "home"
-username = ""
-password = ""
-active_field = "username"
-status_message = ""
-selected_piece = None
-selected_session = None
-
-
-# --------------------------------------------------
-# UI rectangles
-# --------------------------------------------------
-
-# Home screen button rects (positions taken from home.py)
-title_rect = title_img.get_rect(center=(WIDTH // 2, 220))
-login_rect = login_img.get_rect(center=(WIDTH // 2, 520))
-settings_rect = settings_img.get_rect(center=(WIDTH // 2, 700))
-exit_rect = exit_img.get_rect(center=(WIDTH // 2, 880))
-
-username_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 90, 500, 58)
-password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
-submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
-back_button = pygame.Rect(40, 40, 130, 52)
-
-# field name -> rect, used for click detection and drawing
-LOGIN_FIELDS = {
-    "username": username_field,
-    "password": password_field,
-}
-
-
-# --------------------------------------------------
-# Session buttons
-# --------------------------------------------------
-
-session_buttons = []
-start_y = HEIGHT // 2 - 40
-
-for name in session_ID:
-    rect = pygame.Rect(WIDTH // 2 - 150, start_y, 300, 50)
-    session_buttons.append(SessionButton(rect, name))
-    start_y += 70
-
-
-# --------------------------------------------------
-# Drawing helpers
+# Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
 # --------------------------------------------------
 
 def draw_centered_text(text, text_font, color, y):
@@ -213,82 +96,6 @@ def draw_button(rect, label):
     )
 
 
-# --------------------------------------------------
-# Screen transitions
-# --------------------------------------------------
-
-def go_to(new_screen):
-    """
-    Single place for every screen change. Handles any setup/teardown
-    a screen needs (text input on/off, clearing the login form, etc.).
-    """
-    global screen, username, password, active_field, status_message
-
-    screen = new_screen
-
-    if new_screen == "login":
-        username = ""
-        password = ""
-        active_field = "username"
-        status_message = ""
-        pygame.key.start_text_input()
-        return
-
-    pygame.key.stop_text_input()
-
-
-def attempt_login():
-    global status_message
-
-    if not username or not password:
-        status_message = "Enter both a username and password."
-        return
-
-    try:
-        save_credentials(username, password)
-    except (OSError, ValueError, UnicodeDecodeError) as error:
-        status_message = f"Could not save login: {error}"
-        return
-
-    status_message = "Login saved."
-    go_to("session")
-
-
-# --------------------------------------------------
-# Home screen
-# --------------------------------------------------
-
-def home_login():
-    go_to("login")
-
-
-def home_settings():
-    # No settings screen yet: add "settings" to the dispatch tables later.
-    print("Settings screen not implemented yet")
-
-
-def home_exit():
-    global running
-    running = False
-
-
-# button rect -> action
-HOME_BUTTONS = (
-    (login_rect, home_login),
-    (settings_rect, home_settings),
-    (exit_rect, home_exit),
-)
-
-
-def handle_home(event):
-    if event.type != pygame.MOUSEBUTTONDOWN:
-        return
-
-    for rect, action in HOME_BUTTONS:
-        if rect.collidepoint(event.pos):
-            action()
-            return
-
 
 def draw_home():
     gameDisplay.blit(title_bg, (0, 0))
@@ -298,93 +105,29 @@ def draw_home():
     gameDisplay.blit(exit_img, exit_rect)
 
 
-# --------------------------------------------------
-# Login screen
-# --------------------------------------------------
-
-def login_click(event):
-    global active_field
-
-    if back_button.collidepoint(event.pos):
-        go_to("home")
-        return
-
-    if submit_button.collidepoint(event.pos):
-        attempt_login()
-        return
-
-    for field_name, field_rect in LOGIN_FIELDS.items():
-        if field_rect.collidepoint(event.pos):
-            active_field = field_name
-
-
-def login_text(event):
-    global username, password
-
-    if active_field == "username":
-        username += event.text[:MAX_CREDENTIAL_LENGTH - len(username)]
-
-    if active_field == "password":
-        password += event.text[:MAX_CREDENTIAL_LENGTH - len(password)]
-
-
-def login_backspace():
-    global username, password
-
-    if active_field == "username":
-        username = username[:-1]
-
-    if active_field == "password":
-        password = password[:-1]
-
-
-def login_switch_field():
-    global active_field
-    active_field = "password" if active_field == "username" else "username"
-
-
-# key -> action, for the login screen's KEYDOWN events
-LOGIN_KEY_ACTIONS = {
-    pygame.K_BACKSPACE: login_backspace,
-    pygame.K_TAB: login_switch_field,
-    pygame.K_RETURN: attempt_login,
-}
-
-
-def login_key(event):
-    action = LOGIN_KEY_ACTIONS.get(event.key)
-    if action:
-        action()
-
-
-# event type -> handler, for the login screen
-LOGIN_EVENT_HANDLERS = {
-    pygame.MOUSEBUTTONDOWN: login_click,
-    pygame.TEXTINPUT: login_text,
-    pygame.KEYDOWN: login_key,
-}
-
-
-def handle_login(event):
-    handler = LOGIN_EVENT_HANDLERS.get(event.type)
-    if handler:
-        handler(event)
-
 
 def draw_login():
     draw_centered_text("Login", title_font, BLACK_COLOR, HEIGHT // 2 - 230)
     draw_button(back_button, "Back")
 
     for rect, label, value, field_name in (
-        (username_field, "Username", username, "username"),
-        (password_field, "Password", "*" * len(password), "password"),
+        (username_field, "Username", navigate.username, "username"),
+        (password_field, "Password", "*" * len(navigate.password), "password"),
     ):
         pygame.draw.rect(gameDisplay, WHITE_COLOR, rect, border_radius=6)
-        border_color = TAN_COLOR if active_field == field_name else BLACK_COLOR
+
+        border_color = (
+            TAN_COLOR
+            if navigate.active_field == field_name
+            else BLACK_COLOR
+        )
+
         pygame.draw.rect(gameDisplay, border_color, rect, 3, border_radius=6)
+
         shown_text = value or label
         text_color = BLACK_COLOR if value else (110, 110, 110)
         rendered_value = field_font.render(shown_text, True, text_color)
+
         gameDisplay.blit(
             rendered_value,
             (rect.x + 14, rect.centery - rendered_value.get_height() // 2),
@@ -392,32 +135,14 @@ def draw_login():
 
     draw_button(submit_button, "Save & Play")
 
-    if status_message:
+    if navigate.status_message:
         draw_centered_text(
-            status_message, status_font, BLACK_COLOR, submit_button.bottom + 18
+            navigate.status_message,
+            status_font,
+            BLACK_COLOR,
+            submit_button.bottom + 18,
         )
 
-
-# --------------------------------------------------
-# Session screen
-# --------------------------------------------------
-
-def handle_session(event):
-    global selected_session
-
-    if event.type != pygame.MOUSEBUTTONDOWN:
-        return
-
-    if back_button.collidepoint(event.pos):
-        go_to("home")
-        return
-
-    for btn in session_buttons:
-        if btn.is_clicked(event.pos):
-            selected_session = btn.label
-            print("Joining:", selected_session)
-            go_to("game")
-            return
 
 
 def draw_session():
@@ -431,55 +156,42 @@ def draw_session():
     draw_button(back_button, "Back")
 
 
+def draw_select_session():
+    session_load_screen(gameDisplay, title_font, ui_font)
+
+
+def handle_select_session(event):
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        handle_session_click(event)
+
+
 # --------------------------------------------------
 # Game screen
 # --------------------------------------------------
 
 def handle_game(event):
-    global selected_piece
-
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
     x, y = event.pos
 
-    if selected_piece is None:
+    if navigate.selected_piece is None:
         for piece in all_pieces:
             if piece.rect.collidepoint((x, y)):
-                selected_piece = piece
+                navigate.selected_piece = piece
                 return
         return
 
     col = int((x - board_x) // SQUARE_SIZE)
     row = int((y - board_y) // SQUARE_SIZE)
 
-    selected_piece.move(row, col)
-    selected_piece = None
+    navigate.selected_piece.move(row, col)
+    navigate.selected_piece = None
 
 
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
-
-
-# --------------------------------------------------
-# Screen dispatch tables
-# To add a screen: write handle_x / draw_x, add one line to each dict.
-# --------------------------------------------------
-
-EVENT_HANDLERS = {
-    "home": handle_home,
-    "login": handle_login,
-    "session": handle_session,
-    "game": handle_game,
-}
-
-DRAW_FUNCS = {
-    "home": draw_home,
-    "login": draw_login,
-    "session": draw_session,
-    "game": draw_game,
-}
 
 
 def draw_build_version():
@@ -490,6 +202,37 @@ def draw_build_version():
     )
 
 
+## --------------------------------------------------
+#  Dictionaries
+# --------------------------------------------------
+
+GAME_CREATION = {
+    "board": create_board,
+    "pieces": create_all_pieces
+}
+ #initialize the board and pieces
+GAME_CREATION["board"]()
+all_pieces = GAME_CREATION["pieces"]()
+
+running = True
+
+EVENT_HANDLERS = {
+    "home": handle_home,
+    "login": handle_login,
+    "select_session": handle_select_session,
+    "sessions": handle_session,
+    "session": handle_session,
+    "game": handle_game,
+}
+
+DRAW_FUNCS = {
+    "home": draw_home,
+    "login": draw_login,
+    "select_session": draw_select_session,
+    "sessions": draw_session,
+    "session": draw_session,
+    "game": draw_game,
+}
 # --------------------------------------------------
 # Game loop
 # --------------------------------------------------
@@ -501,14 +244,13 @@ while running:
             running = False
             continue
 
-        EVENT_HANDLERS[screen](event)
+        EVENT_HANDLERS[navigate.screen](event)
 
     gameDisplay.blit(bg, (0, 0))
-    DRAW_FUNCS[screen]()
+    DRAW_FUNCS[navigate.screen]()
     draw_build_version()
 
     pygame.display.flip()
 
 
 pygame.quit()
-
