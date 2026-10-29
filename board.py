@@ -1,26 +1,75 @@
+from config import (
+    BOARD_SIZE,
+    BOARD_ROWS,
+    BOARD_COLS,
+    SQUARE_SIZE,
+    board_x,
+    board_y, 
+    WHITE_COLOR,
+    BLACK_COLOR,
+    TAN_COLOR,
+) 
 import pygame
 
+# --------------------------------------------------
+# Board configuration
+# --------------------------------------------------
+BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
+
+#this function creates the checkerboard 
+def create_board():
+    """
+    Draws the checkerboard onto BOARD.
+    """
+
+    for row in range(BOARD_ROWS):
+        for column in range(BOARD_COLS):
+
+            if (row + column) % 2 == 0:
+                color = WHITE_COLOR
+            else:
+                color = BLACK_COLOR
+
+            pygame.draw.rect(
+                BOARD,
+                color,
+                (
+                    column * SQUARE_SIZE,
+                    row * SQUARE_SIZE,
+                    SQUARE_SIZE,
+                    SQUARE_SIZE
+                )
+            )
+
+    pygame.draw.rect(
+        BOARD,
+        TAN_COLOR,
+        (0, 0, BOARD_SIZE, BOARD_SIZE),
+        5
+    )
+
+# --------------------------------------------------
+# Checker Pieces Positioning 
+# --------------------------------------------------
+ 
 # All images of the pieces
 bpk = pygame.image.load("checker_pieces_drawings/black_king_p.png")
 bp = pygame.image.load("checker_pieces_drawings/black_p.png")
 rpk = pygame.image.load("checker_pieces_drawings/red_king_p.png")
 rp = pygame.image.load("checker_pieces_drawings/red_p.png")
 
-#changing inage scale
+
 # --------------------------------------------------
 # Image resizing
 # --------------------------------------------------
 
+#changing image scale
 def image_resize(img, resize_val):
     return pygame.transform.smoothscale(
         img,
         (resize_val, resize_val)
     )
 
-
-# --------------------------------------------------
-# Resized pieces
-# --------------------------------------------------
 
 # --------------------------------------------------
 # Resized pieces
@@ -124,3 +173,13 @@ def create_black_pieces(piece, board_x, board_y):
         piece.set_pieceID(index, "Black")
 
     return black_pieces 
+
+#this function combines the red and black pieces into one group. this function is used in the game creation dictionary in init.py 
+def create_all_pieces():
+    red_piece_set = create_red_pieces(red_piece, board_x, board_y)
+    black_piece_set = create_black_pieces(black_piece, board_x, board_y)
+
+    all_pieces = pygame.sprite.Group()
+    all_pieces.add(red_piece_set)
+    all_pieces.add(black_piece_set)
+    return all_pieces

@@ -1,15 +1,10 @@
 import pygame
-
-
+from navigate import go_to
+from config import BLACK_COLOR, WIDTH, HEIGHT
 # --------------------------------------------------
 # Screen Settings
 # --------------------------------------------------
 
-WIDTH = 800
-HEIGHT = 600
-
-BLACK_COLOR = (0, 0, 0)
-WHITE_COLOR = (255, 255, 255)
 BUTTON_COLOR = (220, 220, 220)
 
 
@@ -73,6 +68,13 @@ def draw_button(surface, button, text, font):
 # Session Screen
 # --------------------------------------------------
 
+# this functions allows for movement to the next screens
+def host_game():
+    go_to("game")
+
+def join_game():
+    go_to("sessions")
+
 def session_load_screen(surface, title_font, button_font):
 
     # Page title
@@ -115,9 +117,8 @@ def session_load_screen(surface, title_font, button_font):
 def handle_session_click(event):
 
     if host_game_button.collidepoint(event.pos):
-        return "game"
+        host_game()
+        return
 
     elif join_session_button.collidepoint(event.pos):
-        return "game"
-
-    return "session"
+        join_game()
