@@ -123,6 +123,130 @@ class CheckerPiece(pygame.sprite.Sprite):
         """Sets the Piece Name so that it can be logged and identified"""
         self.pieceID = piece_type + " " + str(piece_number)
 
+
+## ----------------------------------------------------------
+# Piece Movement using checker rules
+## ----------------------------------------------------------
+class BoardState:
+    def __init__(self, pieces):
+        # ===== BOARD ARRAY: 8 rows by 8 columns, indexed as cells[row][col]. =====
+        # Each cell holds its CheckerPiece, or None when the square is empty.
+        # The sprites remain in their Pygame group for drawing; this grid tracks occupancy.
+        self.cells = [
+            [None for _ in range(BOARD_COLS)]
+            for _ in range(BOARD_ROWS)
+        ]
+        # Red starts. A capture chain keeps the same piece active until it ends.
+        self.current_player = "Red"
+        self.must_continue_piece = None
+
+        # Build the starting occupancy grid from the pieces' row and column values.
+        for piece in pieces:
+            self.cells[piece.row][piece.col] = piece
+
+    def is_current_player_piece(self, piece):
+        """Return whether a piece belongs to the player whose turn it is."""
+        return (
+            piece is not None
+            and piece.pieceID.split(" ", 1)[0] == self.current_player
+        )
+
+    def get_capture_moves(self, piece):
+        """Return available jump destinations for a piece."""
+        if piece is None or self.cells[piece.row][piece.col] is not piece:
+            return []
+
+        if piece.king:
+            row_directions = (-1, 1)
+        else:
+            row_directions = (1,) if piece.pieceID.startswith("Red") else (-1,)
+
+        capture_moves = []
+        piece_color = piece.pieceID.split(" ", 1)[0]
+        # Check each forward diagonal (or both directions for kings) for a jump.
+        for row_direction in row_directions:
+            for col_direction in (-1, 1):
+                middle_row = piece.row + row_direction
+                middle_col = piece.col + col_direction
+                target_row = piece.row + 2 * row_direction
+                target_col = piece.col + 2 * col_direction
+                if not (
+                    0 <= target_row < BOARD_ROWS
+                    and 0 <= target_col < BOARD_COLS
+                ):
+                    continue
+
+                middle_piece = self.cells[middle_row][middle_col]
+                target_piece = self.cells[target_row][target_col]
+                if (
+                    middle_piece is not None
+                    and middle_piece.pieceID.split(" ", 1)[0] != piece_color
+                    and target_piece is None
+                ):
+                    capture_moves.append((target_row, target_col))
+
+        return capture_moves
+
+    def move_piece(self, piece, new_row, new_col):
+        """Move diagonally one step or jump an opponent on the board."""
+        if piece is None:
+            return False
+        # Only the active color may move, and a capture chain locks the chosen piece.
+        if not self.is_current_player_piece(piece):
+            return False
+        if self.must_continue_piece is not None and piece is not self.must_continue_piece:
+            return False
+        if not (0 <= new_row < BOARD_ROWS and 0 <= new_col < BOARD_COLS):
+            return False
+        if self.cells[piece.row][piece.col] is not piece:
+            return False
+        if self.cells[new_row][new_col] is not None:
+            return False
+
+        row_delta = new_row - piece.row
+        col_delta = new_col - piece.col
+        if abs(row_delta) != abs(col_delta) or abs(row_delta) not in (1, 2):
+            return False
+        if self.must_continue_piece is piece and abs(row_delta) != 2:
+            return False
+
+        captured_piece = None
+        if abs(row_delta) == 2:
+            middle_row = piece.row + row_delta // 2
+            middle_col = piece.col + col_delta // 2
+            captured_piece = self.cells[middle_row][middle_col]
+            if captured_piece is None:
+                return False
+
+            piece_color = piece.pieceID.split(" ", 1)[0]
+            captured_color = captured_piece.pieceID.split(" ", 1)[0]
+            if piece_color == captured_color:
+                return False
+
+        # Red moves down the board, Black moves up; kings may move either way.
+        if not piece.king:
+            direction = 1 if piece.pieceID.startswith("Red") else -1
+            if row_delta != direction * abs(row_delta):
+                return False
+
+        # Update occupancy and sprite coordinates together to keep them in sync.
+        self.cells[piece.row][piece.col] = None
+        if captured_piece is not None:
+            middle_row = piece.row + row_delta // 2
+            middle_col = piece.col + col_delta // 2
+            self.cells[middle_row][middle_col] = None
+            # Remove the captured sprite from its Pygame groups so it is no longer drawn.
+            captured_piece.kill()
+        self.cells[new_row][new_col] = piece
+        piece.move(new_row, new_col)
+        # Keep the turn for another available jump; otherwise hand play to the opponent.
+        if captured_piece is not None and self.get_capture_moves(piece):
+            self.must_continue_piece = piece
+        else:
+            self.must_continue_piece = None
+            self.current_player = "Black" if self.current_player == "Red" else "Red"
+        return True
+
 # --------------------------------------------------
 # Starting positions
 # --------------------------------------------------
