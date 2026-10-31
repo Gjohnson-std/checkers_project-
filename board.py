@@ -88,8 +88,6 @@ class CheckerPiece(pygame.sprite.Sprite):
         super().__init__()
         """Creates Pieces"""
         self.image = piece_img
-        self.rect = self.image.get_rect(topleft=(board_x + square_size * col, board_y + square_size * row))
-
         self.pieceID = pieceID
         self.piece_img = piece_img
         self.king_piece_img = king_piece_img
@@ -99,6 +97,10 @@ class CheckerPiece(pygame.sprite.Sprite):
         self.square_size = square_size
         self.row = row
         self.col = col
+
+        self.rect = self.image.get_rect(topleft=(self.board_x + self.square_size * self.col, self.board_y + self.square_size * self.row))
+
+        self.color = None
         
         self.king = False
 
@@ -106,7 +108,7 @@ class CheckerPiece(pygame.sprite.Sprite):
         """King me for when a piece reaches the opposite side of the board"""
         self.king = True
         self.image = self.king_piece_img
-        self.rect = self.image.get_rect(topleft=(self.board_x + self.square_size * self.col, self.board_y + self.square_size * self.row))
+        self.rect = self.image.get_rect(topleft=(board_x + self.square_size * self.col, board_y + self.square_size * self.row))
 
     def update_pos(self):
         """Updates the position of the piece after it has been told to move"""
@@ -122,6 +124,8 @@ class CheckerPiece(pygame.sprite.Sprite):
     def set_pieceID(self, piece_number, piece_type):
         """Sets the Piece Name so that it can be logged and identified"""
         self.pieceID = piece_type + " " + str(piece_number)
+        self.color = piece_type
+
 
 
 ## ----------------------------------------------------------
@@ -239,6 +243,16 @@ class BoardState:
             captured_piece.kill()
         self.cells[new_row][new_col] = piece
         piece.move(new_row, new_col)
+
+        #check new column and row and see if piece can be kinged
+        if not piece.king:
+            if piece.color == "Red" and new_row == BOARD_ROWS - 1:
+                piece.king_me()
+                print("king check: Kinged ", piece.pieceID )
+            if piece.color == "Black" and new_row == 0:
+                piece.king_me()
+                print("king check: Kinged ", piece.pieceID )
+
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
             self.must_continue_piece = piece
