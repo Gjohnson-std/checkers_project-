@@ -101,14 +101,13 @@ class CheckerPiece(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(self.board_x + self.square_size * self.col, self.board_y + self.square_size * self.row))
 
         self.color = None
-        
         self.king = False
 
     def king_me(self):
         """King me for when a piece reaches the opposite side of the board"""
         self.king = True
         self.image = self.king_piece_img
-        self.rect = self.image.get_rect(topleft=(board_x + self.square_size * self.col, board_y + self.square_size * self.row))
+        self.rect = self.image.get_rect(topleft=(self.board_x + self.square_size * self.col, board_y + self.square_size * self.row))
 
     def update_pos(self):
         """Updates the position of the piece after it has been told to move"""
