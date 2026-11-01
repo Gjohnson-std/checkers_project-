@@ -125,7 +125,35 @@ class CheckerPiece(pygame.sprite.Sprite):
         self.pieceID = piece_type + " " + str(piece_number)
         self.color = piece_type
 
+class MoveLog:
+    def __init__(self):
+        self.log = []
 
+    def add_move(self, piece, row, col, new_row, new_col):
+        self.log.append({
+            "turn": len(self.log),
+            "piece": piece.pieceID,
+            "action": "MOVE",
+            "from": (row, col),
+            "to": (new_row, new_col)
+        })
+
+    def add_captured(self, piece, row, col, new_row, new_col, captured_piece):
+        self.log.append({
+            "turn": len(self.log),
+            "piece": piece.pieceID,
+            "action": "CAPTURED",
+            "from": (row, col),
+            "to": (new_row, new_col),
+            "captured": captured_piece
+        })
+
+    def add_captured(self, piece):
+        self.log.append({
+            "turn" : len(self.log),
+            "piece" : piece.pieceID,
+            "action" : "CAPTURED"
+        })
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules
@@ -142,6 +170,8 @@ class BoardState:
         # Red starts. A capture chain keeps the same piece active until it ends.
         self.current_player = "Red"
         self.must_continue_piece = None
+
+        self.move_log = MoveLog
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -247,10 +277,10 @@ class BoardState:
         if not piece.king:
             if piece.color == "Red" and new_row == BOARD_ROWS - 1:
                 piece.king_me()
-                print("king check: Kinged ", piece.pieceID )
+                piece.pieceID += "(KINGED)"
             if piece.color == "Black" and new_row == 0:
                 piece.king_me()
-                print("king check: Kinged ", piece.pieceID )
+                piece.pieceID += "(KINGED)"
 
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
