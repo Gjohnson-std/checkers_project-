@@ -230,7 +230,6 @@ def draw_build_version():
 GAME_CREATION = {
     "board": create_board,
     "pieces": create_all_pieces,
-    "move_log" : draw.
 }
  #initialize the board and pieces
 GAME_CREATION["board"]()
