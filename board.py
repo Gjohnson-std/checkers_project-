@@ -10,6 +10,7 @@ from config import (
     TAN_COLOR,
 ) 
 import pygame
+import pandas as pd
 
 # --------------------------------------------------
 # Board configuration
@@ -130,30 +131,62 @@ class MoveLog():
         self.log = []
 
     def add_move(self, piece, row, col, new_row, new_col):
+        r = self.interpert_row(row)
+        nr = self.interpert_row(new_row)
         self.log.append({
-            "turn": len(self.log),
+            "turn": len(self.log) + 1,
             "piece": piece.pieceID,
             "action": "MOVE",
             "from": (row, col),
-            "to": (new_row, new_col)
+            "to": (new_row, new_col),
+            "message" : f"{piece.pieceID}: {r}{col} -> {nr}{new_col}"
         })
 
-    def add_captured(self, captured_piece):
+    def add_captured(self, piece, captured_piece):
         self.log.append({
-            "turn": len(self.log),
-            "piece": captured_piece.pieceID,
+            "turn": len(self.log) + 1,
+            "piece": piece.pieceID,
+            "captured_piece" : captured_piece.pieceID,
             "action": "CAPTURED",
+            "message" : f"{piece.pieceID} has captured {captured_piece.pieceID}"
         })
 
     def add_king(self, piece):
         self.log.append({
-            "turn" : len(self.log),
+            "turn" : len(self.log) + 1,
             "piece" : piece.pieceID,
-            "action" : "KINGED"
+            "action" : "KINGED",
+            "message" : f"{piece.pieceID} has been kinged"
         })
 
-    def moveLog_print(self):
-        return self.log
+    def interpert_row(self, row):
+        row_names = "ABCDEFGH"
+        return row_names[row]
+
+    def moveLog_to_CSV(self):
+        df = pd.DataFrame(self.log)
+        df.to_csv("Move_log.csv", index=False)
+
+
+class MoveLogPanel():
+    def __init__(self):
+        self.scroll_offset = 0
+
+    def handle_scroll(self, event):
+        if event.type == pygame.MOUSEWHEEL or event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            self.scroll_offset += event.y * 20
+
+    def draw(self, screen, move_log, font, color):
+        pygame.draw.rect(screen, (40,40,40),
+            (820,20,350,760))
+
+        y = 30 + self.scroll_offset
+
+        for entry in move_log.log:
+            if 20 <= y <= 780:
+                text = font.render(entry["message"], True, color)
+                screen.blit(text, (830, y))
+            y += 25
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules
@@ -172,6 +205,7 @@ class BoardState:
         self.must_continue_piece = None
         #creates move log for every board
         self.move_log = MoveLog()
+        self.move_log_panel = MoveLogPanel()
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -290,14 +324,19 @@ class BoardState:
                 piece.pieceID += "(KINGED)"
                 self.move_log.add_king(piece)
 
-        self.check_winner()
-
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
             self.must_continue_piece = piece
         else:
             self.must_continue_piece = None
             self.current_player = "Black" if self.current_player == "Red" else "Red"
+
+        winner = self.check_winner()
+        if winner:
+            print(self.check_winner())
+            self.move_log.moveLog_to_CSV()
+            return winner
+        
         return True
 
     def piece_has_moves(self, piece):
