@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pygame
+import socket
 
 from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
 from pieces import (
