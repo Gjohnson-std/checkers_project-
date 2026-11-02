@@ -170,7 +170,7 @@ class BoardState:
         # Red starts. A capture chain keeps the same piece active until it ends.
         self.current_player = "Red"
         self.must_continue_piece = None
-
+        #creates move log for every board
         self.move_log = MoveLog()
 
         # Build the starting occupancy grid from the pieces' row and column values.
@@ -290,6 +290,8 @@ class BoardState:
                 piece.pieceID += "(KINGED)"
                 self.move_log.add_king(piece)
 
+        self.check_winner()
+
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
             self.must_continue_piece = piece
@@ -299,6 +301,7 @@ class BoardState:
         return True
 
     def piece_has_moves(self, piece):
+        """Checks if a piece has any available moves"""
         if self.get_capture_moves(piece):
             return True
 
@@ -307,9 +310,25 @@ class BoardState:
         else:
             row_directions = (1,) if piece.color == "Red" else (-1,)
 
-        
+        for row_direction in row_directions:
+            for col_direction in (-1, 1):
+                t_row = piece.row + row_direction
+                t_col = piece.col + col_direction
 
-    def count_pieces(self, color):
+            if 0 <= t_row < BOARD_ROWS and 0 <= t_col < BOARD_COLS and self.cells[t_row][t_col] is None:
+                return True
+
+            j_row = piece.row + 2 * row_direction
+            j_col = piece.col + 2 * col_direction
+
+            if 0 <= j_row < BOARD_ROWS and 0 <= j_col < BOARD_COLS:
+                middle_piece = self.cells[t_row][t_col]
+
+                if middle_piece is not None and middle_piece.color != piece.color and self.cells[j_row][j_col] is None:
+                    return True
+        return False
+
+    def get_player_pieces(self, color):
         count = 0
         for row in self.cells:
             for piece in row:
@@ -317,10 +336,16 @@ class BoardState:
                     count +=1
         return count
 
+    def player_has_moves(self, color):
+        for piece in self.get_player_pieces(color):
+            if self.piece_has_moves(piece):
+                return True
+        return False
+
     def check_winner(self):
-         if self.count_pieces("Red") == 0:
+         if self.count_pieces("Red") == 0 or not self.player_has_moves("Red"):
              return "Black Wins!"
-         if self.count_pieces("Black") == 0:
+         if self.count_pieces("Black") == 0 or not self.player_has_moves("Black"):
              return "Red Wins!"
 
 # --------------------------------------------------
