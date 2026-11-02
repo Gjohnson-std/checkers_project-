@@ -138,22 +138,22 @@ class MoveLog:
             "to": (new_row, new_col)
         })
 
-    def add_captured(self, piece, row, col, new_row, new_col, captured_piece):
+    def add_captured(self, captured_piece):
         self.log.append({
             "turn": len(self.log),
-            "piece": piece.pieceID,
+            "piece": captured_piece.pieceID,
             "action": "CAPTURED",
-            "from": (row, col),
-            "to": (new_row, new_col),
-            "captured": captured_piece
         })
 
-    def add_captured(self, piece):
+    def add_king(self, piece):
         self.log.append({
             "turn" : len(self.log),
             "piece" : piece.pieceID,
-            "action" : "CAPTURED"
+            "action" : "KINGED"
         })
+
+    def moveLog_print(self):
+        return self.log
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules
@@ -172,6 +172,8 @@ class BoardState:
         self.must_continue_piece = None
 
         self.move_log = MoveLog
+        self.red_piece_captured_count = 0
+        self.black_piece_captured_count = 0
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -268,19 +270,29 @@ class BoardState:
             middle_row = piece.row + row_delta // 2
             middle_col = piece.col + col_delta // 2
             self.cells[middle_row][middle_col] = None
+            #add captured piece to count
+            self.count_captured_piece(captured_piece)
+            #add captured piece to move log
+            self.move_log.add_captured(captured_piece)
             # Remove the captured sprite from its Pygame groups so it is no longer drawn.
             captured_piece.kill()
         self.cells[new_row][new_col] = piece
+        #add movement to movelog
+        self.move_log.add_move(piece, piece.row, piece.col, new_row, new_col)
+        #move piece
         piece.move(new_row, new_col)
+
 
         #check new column and row and see if piece can be kinged
         if not piece.king:
             if piece.color == "Red" and new_row == BOARD_ROWS - 1:
                 piece.king_me()
                 piece.pieceID += "(KINGED)"
+                self.move_log.add_king(piece)
             if piece.color == "Black" and new_row == 0:
                 piece.king_me()
                 piece.pieceID += "(KINGED)"
+                self.move_log.add_king(piece)
 
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
@@ -289,6 +301,12 @@ class BoardState:
             self.must_continue_piece = None
             self.current_player = "Black" if self.current_player == "Red" else "Red"
         return True
+
+    def count_captured_piece(self, piece):
+        if piece.color == "Red":
+            self.red_piece_captured_count += 1
+        else:
+            self.black_piece_captured_count += 1
 
 # --------------------------------------------------
 # Starting positions
