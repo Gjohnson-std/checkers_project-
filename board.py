@@ -368,6 +368,7 @@ class BoardState:
         return False
 
     def get_player_pieces(self, color):
+        """counts the player's pieces"""
         count = 0
         for row in self.cells:
             for piece in row:
@@ -376,15 +377,17 @@ class BoardState:
         return count
 
     def player_has_moves(self, color):
-        for piece in self.get_player_pieces(color):
+        """Checks if any of a player's pieces can move"""
+        for piece in range(self.get_player_pieces(color)):
             if self.piece_has_moves(piece):
                 return True
         return False
 
     def check_winner(self):
-         if self.count_pieces("Red") == 0 or not self.player_has_moves("Red"):
+         """satisfied when a player loses all their pieces or they cannot move their pieces"""
+         if self.get_player_pieces("Red") == 0 or not self.player_has_moves("Red"):
              return "Black Wins!"
-         if self.count_pieces("Black") == 0 or not self.player_has_moves("Black"):
+         if self.get_player_pieces("Black") == 0 or not self.player_has_moves("Black"):
              return "Red Wins!"
 
 # --------------------------------------------------
