@@ -14,6 +14,7 @@ pygame.display.set_caption("Troubleshooters: Checkers Game")
 from config import (
     WIDTH,
     HEIGHT,
+    BOARD_SIZE,
     TAN_COLOR,
     BLACK_COLOR,
     WHITE_COLOR,
@@ -35,6 +36,7 @@ import navigate
 
 from board import (
     BOARD,
+    BoardState,
     create_board,
     create_all_pieces,
 )
@@ -174,19 +176,38 @@ def handle_game(event):
         return
 
     x, y = event.pos
-
-    if navigate.selected_piece is None:
-        for piece in all_pieces:
-            if piece.rect.collidepoint((x, y)):
-                navigate.selected_piece = piece
-                return
+    board_col_x = x - board_x
+    board_row_y = y - board_y
+    if not (0 <= board_col_x < BOARD_SIZE and 0 <= board_row_y < BOARD_SIZE):
         return
 
-    col = int((x - board_x) // SQUARE_SIZE)
-    row = int((y - board_y) // SQUARE_SIZE)
+    col = int(board_col_x // SQUARE_SIZE)
+    row = int(board_row_y // SQUARE_SIZE)
+    clicked_piece = board_state.cells[row][col]
 
-    navigate.selected_piece.move(row, col)
-    navigate.selected_piece = None
+    if board_state.must_continue_piece is not None:
+        # A capture chain cannot be interrupted by selecting another piece.
+        navigate.selected_piece = board_state.must_continue_piece
+        if clicked_piece is None and board_state.move_piece(
+            navigate.selected_piece, row, col
+        ):
+            navigate.selected_piece = board_state.must_continue_piece
+        return
+
+    if clicked_piece is not None:
+        # Only the active player can choose a piece; the model checks moves again.
+        if board_state.is_current_player_piece(clicked_piece):
+            navigate.selected_piece = (
+                None if clicked_piece is navigate.selected_piece else clicked_piece
+            )
+        else:
+            navigate.selected_piece = None
+        return
+
+    if navigate.selected_piece is not None and board_state.move_piece(
+        navigate.selected_piece, row, col
+    ):
+        navigate.selected_piece = board_state.must_continue_piece
 
 
 def draw_game():
@@ -213,6 +234,7 @@ GAME_CREATION = {
  #initialize the board and pieces
 GAME_CREATION["board"]()
 all_pieces = GAME_CREATION["pieces"]()
+board_state = BoardState(all_pieces)
 
 running = True
 
