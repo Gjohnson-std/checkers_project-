@@ -205,7 +205,7 @@ class BoardState:
         self.must_continue_piece = None
         #creates move log for every board
         self.move_log = MoveLog()
-        self.move_log_panel = MoveLogPanel()
+        #self.move_log_panel = MoveLogPanel()
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -385,9 +385,13 @@ class BoardState:
 
     def check_winner(self):
          """satisfied when a player loses all their pieces or they cannot move their pieces"""
-         if self.get_player_pieces("Red") == 0 or not self.player_has_moves("Red"):
+         if self.get_player_pieces("Red") == 0:
              return "Black Wins!"
-         if self.get_player_pieces("Black") == 0 or not self.player_has_moves("Black"):
+         if self.get_player_pieces("Black") == 0:
+             return "Red Wins!"
+         if not self.player_has_moves("Red"):
+             return "Black Wins!"
+         if not self.player_has_moves("Black"):
              return "Red Wins!"
 
 # --------------------------------------------------
