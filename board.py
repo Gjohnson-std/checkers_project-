@@ -125,7 +125,7 @@ class CheckerPiece(pygame.sprite.Sprite):
         self.pieceID = piece_type + " " + str(piece_number)
         self.color = piece_type
 
-class MoveLog:
+class MoveLog():
     def __init__(self):
         self.log = []
 
@@ -171,9 +171,7 @@ class BoardState:
         self.current_player = "Red"
         self.must_continue_piece = None
 
-        self.move_log = MoveLog
-        self.red_piece_captured_count = 0
-        self.black_piece_captured_count = 0
+        self.move_log = MoveLog()
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -270,8 +268,6 @@ class BoardState:
             middle_row = piece.row + row_delta // 2
             middle_col = piece.col + col_delta // 2
             self.cells[middle_row][middle_col] = None
-            #add captured piece to count
-            self.count_captured_piece(captured_piece)
             #add captured piece to move log
             self.move_log.add_captured(captured_piece)
             # Remove the captured sprite from its Pygame groups so it is no longer drawn.
@@ -302,11 +298,30 @@ class BoardState:
             self.current_player = "Black" if self.current_player == "Red" else "Red"
         return True
 
-    def count_captured_piece(self, piece):
-        if piece.color == "Red":
-            self.red_piece_captured_count += 1
+    def piece_has_moves(self, piece):
+        if self.get_capture_moves(piece):
+            return True
+
+        if piece.king:
+            row_directions = (-1, 1)
         else:
-            self.black_piece_captured_count += 1
+            row_directions = (1,) if piece.color == "Red" else (-1,)
+
+        
+
+    def count_pieces(self, color):
+        count = 0
+        for row in self.cells:
+            for piece in row:
+                if piece is not None and piece.color == color:
+                    count +=1
+        return count
+
+    def check_winner(self):
+         if self.count_pieces("Red") == 0:
+             return "Black Wins!"
+         if self.count_pieces("Black") == 0:
+             return "Red Wins!"
 
 # --------------------------------------------------
 # Starting positions
