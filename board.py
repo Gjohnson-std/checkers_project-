@@ -10,6 +10,8 @@ from config import (
     TAN_COLOR,
 ) 
 import pygame
+import pandas as pd
+from datetime import datetime
 
 # --------------------------------------------------
 # Board configuration
@@ -120,8 +122,94 @@ class CheckerPiece(pygame.sprite.Sprite):
         self.update_pos()
 
     def set_pieceID(self, piece_number, piece_type):
-        """Sets the Piece Name so that it can be logged and identified"""
-        self.pieceID = piece_type + " " + str(piece_number)
+            """Sets the Piece Name so that it can be logged and identified"""
+            self.pieceID = piece_type + " " + str(piece_number)
+            self.color = piece_type
+
+class MoveLog():
+    def __init__(self):
+        """Move Log to record all moves and actions for each game"""
+        self.log = []
+        self.rowName = "ABCDEFGH"
+
+    def add_move(self, piece, row, col, new_row, new_col, captured_piece, has_been_kinged):
+        """Adds a move/ action to the game log"""
+        message = (f"{len(self.log)+1} | MOVE {piece.pieceID}: {self.rowName[row]}{col} -> {self.rowName[new_row]}{new_col}")
+
+        if captured_piece is not None:
+            message += (f"\n     | CAPTURE: {piece.pieceID} has taken {captured_piece.pieceID}")
+
+        if has_been_kinged:
+            message += (f"\n     | KING: {piece.pieceID} has been kinged")
+            piece.pieceID += " (KING)"
+
+        self.log.append({
+            "turn": len(self.log) + 1,
+            "action": "MOVE",
+            "piece": piece.pieceID,
+            "from": (self.rowName[row], col),
+            "to": (self.rowName[new_row], new_col),
+            "captured_piece": captured_piece.pieceID if captured_piece is not None else None,
+            "captured_piece_pos": (self.rowName[captured_piece.row], captured_piece.col) if captured_piece is not None else None,
+            "kinged_piece": has_been_kinged,
+            "message": message
+        })
+
+    def add_result(self, winner):
+        """Adds the final result of the game to the move log"""
+        loser = "Red" if winner == "Black" else "Black"
+        self.log.append({
+            "turn": len(self.log) + 1,
+            "action": "GAME OVER",
+            "winner": winner,
+            "loser": loser,
+            "message": (f"Player {winner} has won! :) \nPlayer {loser} has lost!")
+        })
+
+    def print_move_message(self):
+        """Prints the messages for each action for the player"""
+        if self.log:
+            print(self.log[-1]["message"])
+
+    def moveLog_to_CSV(self, fileName):
+        """Turns the Log into a CSV for saving"""
+        df = pd.DataFrame(self.log)
+        if fileName is None:
+            fileName = (f"Game_Log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv")
+        df.to_csv(fileName, index=False)
+
+class MoveLogPanel():
+    def __init__(self):
+        "will display the real time Move log for the player"
+        self.self = None
+        self.visable = True
+
+        self.button_rect = pygame.Rect(900, 680, 400, 50)
+
+    def draw(self, screen, move_log, title_font, ui_font, panel_color, color):
+        """Draws the move log panel which will contain the move log messages only"""
+        if not self.visable:
+            return
+        #draws the move log panel
+        panel_rect = pygame.Rect(900,20,400,650)
+        pygame.draw.rect(screen, panel_color, panel_rect, border_radius=3)
+        screen.set_clip(panel_rect)
+        y = 90
+        #only show the latest 15 entries
+        entries = move_log.log[-13:]
+        label = title_font.render("MOVE LOG", True, color)
+        screen.blit(label, (910, 30))
+        for entry in entries:
+            for line in entry["message"].split("\n"):
+                text = ui_font.render(line, True, color)
+                screen.blit(text, (920, y))
+                y += 25
+        screen.set_clip(None)
+
+    def handel_moveLog_toggle(self, pos):
+        """to give the player the ability to toggle the move log on """
+        if self.button_rect.collidepoint(pos):
+            self.visable = not self.visable
 
 
 ## ----------------------------------------------------------
@@ -139,6 +227,9 @@ class BoardState:
         # Red starts. A capture chain keeps the same piece active until it ends.
         self.current_player = "Red"
         self.must_continue_piece = None
+
+        #move log
+        self.moveLog = MoveLog()
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -235,17 +326,117 @@ class BoardState:
             middle_row = piece.row + row_delta // 2
             middle_col = piece.col + col_delta // 2
             self.cells[middle_row][middle_col] = None
+            cap_log = captured_piece
             # Remove the captured sprite from its Pygame groups so it is no longer drawn.
             captured_piece.kill()
         self.cells[new_row][new_col] = piece
+        row_log = piece.row
+        col_log = piece.col
+        kinged_log = False
         piece.move(new_row, new_col)
+
+        #if piece has reached the opposite end of the board, then it will be kinged
+        if not piece.king:
+            if piece.color == "Red" and new_row == BOARD_ROWS - 1:
+                piece.king_me()
+                kinged_log = True
+            if piece.color == "Black" and new_row == 0:
+                piece.king_me()
+                kinged_log = True
+            
+
+        #add move to the move log and print message
+        self.moveLog.add_move(piece, row_log, col_log, new_row, new_col, captured_piece, kinged_log)
+        self.moveLog.print_move_message()
+
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
             self.must_continue_piece = piece
         else:
             self.must_continue_piece = None
             self.current_player = "Black" if self.current_player == "Red" else "Red"
+
+        #winner check
+        winner = self.win_or_loss_check()
+        if winner:
+            self.moveLog.add_result(winner)
+            self.moveLog.print_move_message()
+            self.moveLog.moveLog_to_CSV(None)
+
         return True
+
+    def piece_count(self, player_color):
+        """Gets the remaining piece count from the board after each turn"""
+        count = 0
+        #checks each row for remaining pieces from check player
+        for row in self.cells:
+            for piece in row:
+                if piece is not None and piece.color == player_color:
+                    count += 1
+        return count
+
+    def get_remaining_pieces(self, player_color):
+            """Gets the remaining piece count from the board after each turn"""
+            remaining = []
+            #checks each row for remaining pieces from check player
+            for row in self.cells:
+                for piece in row:
+                    if piece is not None and piece.color == player_color:
+                        remaining.append(piece)
+            return remaining
+
+   
+    def piece_has_moves(self, piece):
+        """checks if a piece can moves in can make"""
+        if self.get_capture_moves(piece):
+            #if there are capture moves then there are valid moves
+            return True
+
+        if piece.king:
+            #king checks four spaces diagonally
+            row_directions = (-1, 1)
+        else:
+            #piece checks two spaces foward only
+            row_directions = (1,) if piece.color == "Red" else (-1,)
+
+        for row_direction in row_directions:
+            for col_direction in (1, -1):
+                row = piece.row + row_direction
+                col = piece.col + col_direction
+
+                if 0 <= row < BOARD_ROWS and 0 <= col < BOARD_COLS and self.cells[row][col] is None:
+                    #True if any near valid board space is empty
+                    return True
+
+                jump_row = piece.row + 2 * row_direction
+                jump_col = piece.col + 2 * col_direction
+
+                if 0 <= jump_row < BOARD_ROWS and 0 <= jump_col < BOARD_COLS:
+                    middle_piece = self.cells[row][col]
+
+                    if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is not None:
+                        #True if the piece can make a valid jump over another piece
+                        return True
+        return False
+
+    def player_has_moves(self, player_color):
+        """checks each of a player's remaining pieces to see if they have any available moves"""
+        for piece in self.get_remaining_pieces(player_color):
+            if self.piece_has_moves(piece):
+                return True
+        return False
+
+    def win_or_loss_check(self):
+        """Checks if a player has won or lost each turn"""
+        #win and loss condition based on which player looses all of their pieces first
+        if self.piece_count("Red") == 0:
+            return "Black"
+        if self.piece_count("Black") == 0:
+            return "Red"
+        if not self.player_has_moves("Red"):
+            return "Black"
+        if not self.player_has_moves("Black"):
+            return "Red"
 
 # --------------------------------------------------
 # Starting positions
