@@ -1,5 +1,18 @@
 
 import pygame
+import socket
+
+from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
+from pieces import (
+    red_piece,
+    black_piece,
+    create_red_pieces,
+    create_black_pieces
+)
+from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
+from sessions import SessionButton, session_ID
+
+
 pygame.init()
 
 from config import WIDTH, HEIGHT 
