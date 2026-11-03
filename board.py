@@ -173,6 +173,26 @@ class MoveLog():
             fileName = (f"Game_Log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv")
         df.to_csv(fileName, index=False)
 
+class MoveLogPanel():
+    def __init__(self):
+        self.scroll_offset = 0
+
+    def handle_scroll(self, event):
+        if event.type == pygame.MOUSEWHEEL or event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            self.scroll_offset += event.y * 20
+
+    def draw(self, screen, move_log, font, color):
+        panel_rect = pygame.Rect(1000,20,350,660)
+        pygame.draw.rect(screen, (255,255,255), panel_rect)
+        screen.set_clip(panel_rect)
+        y = 30
+        entries = move_log.log[-20:]
+        for entry in entries:
+            for line in entry["message"].split("\n"):
+                text = font.render(line, True, color)
+                screen.blit(text, (1010, y))
+                y += 25
+        screen.set_clip(None)
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules

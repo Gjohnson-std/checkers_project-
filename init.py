@@ -39,6 +39,7 @@ from board import (
     BoardState,
     create_board,
     create_all_pieces,
+    MoveLogPanel
 )
 
 
@@ -213,6 +214,8 @@ def handle_game(event):
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
+    move_log_panel.draw(gameDisplay, board_state.moveLog, font, BLACK_COLOR)
+
 
 
 def draw_build_version():
@@ -230,11 +233,13 @@ def draw_build_version():
 GAME_CREATION = {
     "board": create_board,
     "pieces": create_all_pieces,
+    "move_log": MoveLogPanel()
 }
  #initialize the board and pieces
 GAME_CREATION["board"]()
 all_pieces = GAME_CREATION["pieces"]()
 board_state = BoardState(all_pieces)
+move_log_panel = GAME_CREATION["move_log"]
 
 running = True
 
