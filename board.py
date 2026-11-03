@@ -181,19 +181,39 @@ class MoveLog():
 class MoveLogPanel():
     def __init__(self):
         self.self = None
+        self.visable = True
 
-    def draw(self, screen, move_log, font, color):
-        panel_rect = pygame.Rect(1000,20,350,660)
-        pygame.draw.rect(screen, (255,255,255), panel_rect)
+        self.button_rect = pygame.Rect(900, 680, 400, 65)
+
+    def draw(self, screen, move_log, title_font, ui_font, panel_color, color):
+        if not self.visable:
+            return
+
+        panel_rect = pygame.Rect(900,20,400,650)
+        pygame.draw.rect(screen, panel_color, panel_rect, border_radius=3)
         screen.set_clip(panel_rect)
-        y = 30
-        entries = move_log.log[-20:]
+        y = 60
+        entries = move_log.log[-15:]
+        label = title_font.render("MOVE LOG", True, color)
+        screen.blit(label, (910, 30))
+
         for entry in entries:
             for line in entry["message"].split("\n"):
-                text = font.render(line, True, color)
-                screen.blit(text, (1010, y))
+                text = ui_font.render(line, True, color)
+                screen.blit(text, (920, y))
                 y += 25
         screen.set_clip(None)
+
+        #pygame.draw.rect(screen, btn_color, self.button_rect, border_radius= 3)
+        #button_text = "Hide Log" if self.visable else "Show Log"
+        #text_surface = title_font.render(button_text, True, (0, 0, 0))
+        #screen.blit(text_surface, (self.button_rect.x, self.button_rect.y))
+
+
+    def handel_moveLog_toggle(self, pos):
+        if self.button_rect.collidepoint(pos):
+            self.visable = not self.visable
+
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules

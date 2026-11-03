@@ -176,6 +176,11 @@ def handle_game(event):
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
+    #toggle move log panel on and off
+    if move_log_panel.button_rect.collidepoint(event.pos):
+        move_log_panel.visable = not move_log_panel.visable
+        return
+
     x, y = event.pos
     board_col_x = x - board_x
     board_row_y = y - board_y
@@ -214,7 +219,9 @@ def handle_game(event):
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
-    move_log_panel.draw(gameDisplay, board_state.moveLog, font, BLACK_COLOR)
+    button_text = "Hide Log" if move_log_panel.visable else "Show Log"
+    draw_button(move_log_panel.button_rect, button_text)
+    move_log_panel.draw(gameDisplay, board_state.moveLog, ui_font, font, WHITE_COLOR, BLACK_COLOR)
 
 
 
