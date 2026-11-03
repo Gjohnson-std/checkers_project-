@@ -10,6 +10,8 @@ from config import (
     TAN_COLOR,
 ) 
 import pygame
+import pandas as pd
+from datetime import datetime
 
 # --------------------------------------------------
 # Board configuration
@@ -151,9 +153,25 @@ class MoveLog():
             "message": message
         })
 
+    def add_result(self, winner):
+        loser = "Red" if winner == "Black" else "Black"
+        self.log.append({
+            "turn": len(self.log) + 1,
+            "action": "GAME OVER",
+            "winner": winner,
+            "loser": loser,
+            "message": (f"Player {winner} has won! :) \nPlayer {loser} has lost!")
+        })
+
     def print_move_message(self):
         if self.log:
             print(self.log[-1]["message"])
+
+    def moveLog_to_CSV(self, fileName):
+        df = pd.DataFrame(self.log)
+        if fileName is None:
+            fileName = (f"Game_Log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv")
+        df.to_csv(fileName, index=False)
 
 
 ## ----------------------------------------------------------
@@ -300,12 +318,11 @@ class BoardState:
             self.must_continue_piece = None
             self.current_player = "Black" if self.current_player == "Red" else "Red"
 
-        if self.win_or_loss_check():
-            print(f"WINNER: {self.win_or_loss_check()}")
-            if self.win_or_loss_check() == "Red":
-                print(f"LOSER: Black")
-            else:
-                print(f"LOSER: Red")
+        winner = self.win_or_loss_check()
+        if winner:
+            self.moveLog.add_result(winner)
+            self.moveLog.print_move_message()
+            self.moveLog.moveLog_to_CSV(None)
 
         return True
 
