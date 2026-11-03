@@ -137,10 +137,10 @@ class MoveLog():
         message = (f"{len(self.log)+1} | MOVE {piece.pieceID}: {self.rowName[row]}{col} -> {self.rowName[new_row]}{new_col}")
 
         if captured_piece is not None:
-            message += (f"\n\t| CAPTURE: {piece.pieceID} has taken {captured_piece.pieceID}")
+            message += (f"\n     | CAPTURE: {piece.pieceID} has taken {captured_piece.pieceID}")
 
         if has_been_kinged:
-            message += (f"\n\t| KING: {piece.pieceID} has been kinged")
+            message += (f"\n     | KING: {piece.pieceID} has been kinged")
             piece.pieceID += " (KING)"
 
         self.log.append({
@@ -180,23 +180,25 @@ class MoveLog():
 
 class MoveLogPanel():
     def __init__(self):
+        "will display the real time Move log for the player"
         self.self = None
         self.visable = True
 
-        self.button_rect = pygame.Rect(900, 680, 400, 65)
+        self.button_rect = pygame.Rect(900, 680, 400, 50)
 
     def draw(self, screen, move_log, title_font, ui_font, panel_color, color):
+        """Draws the move log panel which will contain the move log messages only"""
         if not self.visable:
             return
-
+        #draws the move log panel
         panel_rect = pygame.Rect(900,20,400,650)
         pygame.draw.rect(screen, panel_color, panel_rect, border_radius=3)
         screen.set_clip(panel_rect)
-        y = 60
-        entries = move_log.log[-15:]
+        y = 90
+        #only show the latest 15 entries
+        entries = move_log.log[-13:]
         label = title_font.render("MOVE LOG", True, color)
         screen.blit(label, (910, 30))
-
         for entry in entries:
             for line in entry["message"].split("\n"):
                 text = ui_font.render(line, True, color)
@@ -204,13 +206,8 @@ class MoveLogPanel():
                 y += 25
         screen.set_clip(None)
 
-        #pygame.draw.rect(screen, btn_color, self.button_rect, border_radius= 3)
-        #button_text = "Hide Log" if self.visable else "Show Log"
-        #text_surface = title_font.render(button_text, True, (0, 0, 0))
-        #screen.blit(text_surface, (self.button_rect.x, self.button_rect.y))
-
-
     def handel_moveLog_toggle(self, pos):
+        """to give the player the ability to toggle the move log on """
         if self.button_rect.collidepoint(pos):
             self.visable = not self.visable
 
@@ -348,7 +345,7 @@ class BoardState:
                 kinged_log = True
             
 
-        #add move to the move log
+        #add move to the move log and print message
         self.moveLog.add_move(piece, row_log, col_log, new_row, new_col, captured_piece, kinged_log)
         self.moveLog.print_move_message()
 
@@ -359,6 +356,7 @@ class BoardState:
             self.must_continue_piece = None
             self.current_player = "Black" if self.current_player == "Red" else "Red"
 
+        #winner check
         winner = self.win_or_loss_check()
         if winner:
             self.moveLog.add_result(winner)
@@ -389,6 +387,7 @@ class BoardState:
 
    
     def piece_has_moves(self, piece):
+        """checks if a piece can moves in can make"""
         if self.get_capture_moves(piece):
             #if there are capture moves then there are valid moves
             return True
@@ -418,7 +417,6 @@ class BoardState:
                     if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is not None:
                         #True if the piece can make a valid jump over another piece
                         return True
-                    
         return False
 
     def player_has_moves(self, player_color):
@@ -439,7 +437,6 @@ class BoardState:
             return "Black"
         if not self.player_has_moves("Black"):
             return "Red"
-
 
 # --------------------------------------------------
 # Starting positions
