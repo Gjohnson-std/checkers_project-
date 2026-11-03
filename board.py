@@ -246,11 +246,10 @@ class BoardState:
             if piece.color == "Red" and new_row == BOARD_ROWS - 1:
                 piece.king_me()
                 piece.pieceID += "(KINGED)"
-                self.move_log.add_king(piece)
+                
             if piece.color == "Black" and new_row == 0:
                 piece.king_me()
                 piece.pieceID += "(KINGED)"
-                self.move_log.add_king(piece)
 
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
@@ -258,7 +257,35 @@ class BoardState:
         else:
             self.must_continue_piece = None
             self.current_player = "Black" if self.current_player == "Red" else "Red"
+
+        if self.win_or_loss_check():
+            print(f"Winner: {self.win_or_loss_check()}")
+            if self.win_or_loss_check() == "Red":
+                print(f"Loser: Black")
+            else:
+                print(f"Loser: Red")
+
         return True
+
+    def piece_count(self, player_color):
+        """Gets the remaining piece count from the board after each turn"""
+        count = 0
+        for row in self.cells:
+            for piece in row:
+                if piece is not None and piece.color == player_color:
+                    count += 1
+        return count
+
+    def win_or_loss_check(self):
+        """Checks if a player has won or lost each turn"""
+        #win and loss condition based on which player looses all of their pieces first
+        if self.piece_count("Red") == 0:
+            return "Black"
+        if self.piece_count("Black") == 0:
+            return "Red"
+            
+        
+
 
 # --------------------------------------------------
 # Starting positions
