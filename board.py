@@ -124,6 +124,37 @@ class CheckerPiece(pygame.sprite.Sprite):
             self.pieceID = piece_type + " " + str(piece_number)
             self.color = piece_type
 
+class MoveLog():
+    def __init__(self):
+        self.log = []
+        self.rowName = "ABCDEFGH"
+
+    def add_move(self, piece, row, col, new_row, new_col, captured_piece, has_been_kinged):
+        message = (f"{len(self.log)+1} | MOVE {piece.pieceID}: {self.rowName[row]}{col} -> {self.rowName[new_row]}{new_col}")
+
+        if captured_piece is not None:
+            message += (f"\n\t| CAPTURE: {piece.pieceID} has taken {captured_piece.pieceID}")
+
+        if has_been_kinged:
+            message += (f"\n\t| KING: {piece.pieceID} has been kinged")
+            piece.pieceID += " (KING)"
+
+        self.log.append({
+            "turn": len(self.log) + 1,
+            "action": "MOVE",
+            "piece": piece.pieceID,
+            "from": (self.rowName[row], col),
+            "to": (self.rowName[new_row], new_col),
+            "captured_piece": captured_piece.pieceID if captured_piece is not None else None,
+            "captured_piece_pos": (self.rowName[captured_piece.row], captured_piece.col) if captured_piece is not None else None,
+            "kinged_piece": has_been_kinged,
+            "message": message
+        })
+
+    def print_move_message(self):
+        if self.log:
+            print(self.log[-1]["message"])
+
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules
@@ -140,6 +171,9 @@ class BoardState:
         # Red starts. A capture chain keeps the same piece active until it ends.
         self.current_player = "Red"
         self.must_continue_piece = None
+
+        #move log
+        self.moveLog = MoveLog()
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -236,20 +270,28 @@ class BoardState:
             middle_row = piece.row + row_delta // 2
             middle_col = piece.col + col_delta // 2
             self.cells[middle_row][middle_col] = None
+            cap_log = captured_piece
             # Remove the captured sprite from its Pygame groups so it is no longer drawn.
             captured_piece.kill()
         self.cells[new_row][new_col] = piece
+        row_log = piece.row
+        col_log = piece.col
+        kinged_log = False
         piece.move(new_row, new_col)
 
         #if piece has reached the opposite end of the board, then it will be kinged
         if not piece.king:
             if piece.color == "Red" and new_row == BOARD_ROWS - 1:
                 piece.king_me()
-                piece.pieceID += "(KINGED)"
-                
+                kinged_log = True
             if piece.color == "Black" and new_row == 0:
                 piece.king_me()
-                piece.pieceID += "(KINGED)"
+                kinged_log = True
+            
+
+        #add move to the move log
+        self.moveLog.add_move(piece, row_log, col_log, new_row, new_col, captured_piece, kinged_log)
+        self.moveLog.print_move_message()
 
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
@@ -259,22 +301,74 @@ class BoardState:
             self.current_player = "Black" if self.current_player == "Red" else "Red"
 
         if self.win_or_loss_check():
-            print(f"Winner: {self.win_or_loss_check()}")
+            print(f"WINNER: {self.win_or_loss_check()}")
             if self.win_or_loss_check() == "Red":
-                print(f"Loser: Black")
+                print(f"LOSER: Black")
             else:
-                print(f"Loser: Red")
+                print(f"LOSER: Red")
 
         return True
 
     def piece_count(self, player_color):
         """Gets the remaining piece count from the board after each turn"""
         count = 0
+        #checks each row for remaining pieces from check player
         for row in self.cells:
             for piece in row:
                 if piece is not None and piece.color == player_color:
                     count += 1
         return count
+
+    def get_remaining_pieces(self, player_color):
+            """Gets the remaining piece count from the board after each turn"""
+            remaining = []
+            #checks each row for remaining pieces from check player
+            for row in self.cells:
+                for piece in row:
+                    if piece is not None and piece.color == player_color:
+                        remaining.append(piece)
+            return remaining
+
+   
+    def piece_has_moves(self, piece):
+        if self.get_capture_moves(piece):
+            #if there are capture moves then there are valid moves
+            return True
+
+        if piece.king:
+            #king checks four spaces diagonally
+            row_directions = (-1, 1)
+        else:
+            #piece checks two spaces foward only
+            row_directions = (1,) if piece.color == "Red" else (-1,)
+
+        for row_direction in row_directions:
+            for col_direction in (1, -1):
+                row = piece.row + row_direction
+                col = piece.col + col_direction
+
+                if 0 <= row < BOARD_ROWS and 0 <= col < BOARD_COLS and self.cells[row][col] is None:
+                    #True if any near valid board space is empty
+                    return True
+
+                jump_row = piece.row + 2 * row_direction
+                jump_col = piece.col + 2 * col_direction
+
+                if 0 <= jump_row < BOARD_ROWS and 0 <= jump_col < BOARD_COLS:
+                    middle_piece = self.cells[row][col]
+
+                    if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is not None:
+                        #True if the piece can make a valid jump over another piece
+                        return True
+                    
+        return False
+
+    def player_has_moves(self, player_color):
+        """checks each of a player's remaining pieces to see if they have any available moves"""
+        for piece in self.get_remaining_pieces(player_color):
+            if self.piece_has_moves(piece):
+                return True
+        return False
 
     def win_or_loss_check(self):
         """Checks if a player has won or lost each turn"""
@@ -283,8 +377,10 @@ class BoardState:
             return "Black"
         if self.piece_count("Black") == 0:
             return "Red"
-            
-        
+        if not self.player_has_moves("Red"):
+            return "Black"
+        if not self.player_has_moves("Black"):
+            return "Red"
 
 
 # --------------------------------------------------
