@@ -128,10 +128,12 @@ class CheckerPiece(pygame.sprite.Sprite):
 
 class MoveLog():
     def __init__(self):
+        """Move Log to record all moves and actions for each game"""
         self.log = []
         self.rowName = "ABCDEFGH"
 
     def add_move(self, piece, row, col, new_row, new_col, captured_piece, has_been_kinged):
+        """Adds a move/ action to the game log"""
         message = (f"{len(self.log)+1} | MOVE {piece.pieceID}: {self.rowName[row]}{col} -> {self.rowName[new_row]}{new_col}")
 
         if captured_piece is not None:
@@ -154,6 +156,7 @@ class MoveLog():
         })
 
     def add_result(self, winner):
+        """Adds the final result of the game to the move log"""
         loser = "Red" if winner == "Black" else "Black"
         self.log.append({
             "turn": len(self.log) + 1,
@@ -164,10 +167,12 @@ class MoveLog():
         })
 
     def print_move_message(self):
+        """Prints the messages for each action for the player"""
         if self.log:
             print(self.log[-1]["message"])
 
     def moveLog_to_CSV(self, fileName):
+        """Turns the Log into a CSV for saving"""
         df = pd.DataFrame(self.log)
         if fileName is None:
             fileName = (f"Game_Log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv")
@@ -175,11 +180,7 @@ class MoveLog():
 
 class MoveLogPanel():
     def __init__(self):
-        self.scroll_offset = 0
-
-    def handle_scroll(self, event):
-        if event.type == pygame.MOUSEWHEEL or event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-            self.scroll_offset += event.y * 20
+        self.self = None
 
     def draw(self, screen, move_log, font, color):
         panel_rect = pygame.Rect(1000,20,350,660)
