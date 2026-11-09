@@ -13,6 +13,9 @@ import pygame
 import pandas as pd
 from datetime import datetime
 
+pygame.font.init()
+win_font = pygame.font.SysFont("arial", 200, bold=True)
+
 # --------------------------------------------------
 # Board configuration
 # --------------------------------------------------
@@ -215,9 +218,13 @@ class GameOverPanel():
     """Displays winner and gives player option to save game, replay game, or exit game"""
     def __init__(self):
         """Game over panel that will be presented after the game has been won / ended"""
-        self.save_log_button = pygame.Rect(30, 320, 400, 50)
-        self.new_game_button = pygame.Rect(30, 380, 400, 50)
-        self.exit_game_button = pygame.Rect(30, 440, 400, 50)
+        self.panel_rect = pygame.Rect(41, 41, 1300, 695)
+        #self.save_log_button = pygame.Rect(50, 278, 1282, 130)
+        self.save_log_button = pygame.Rect(self.panel_rect.centerx - 545, self.panel_rect.bottom - 100, 350, 60)
+        #self.new_game_button = pygame.Rect(50, 417, 1282, 130)
+        self.new_game_button = pygame.Rect(self.panel_rect.centerx - 175, self.panel_rect.bottom - 100, 350, 60)
+        #self.exit_game_button = pygame.Rect(50, 556, 1282, 130)
+        self.exit_game_button = pygame.Rect(self.panel_rect.centerx + 195, self.panel_rect.bottom - 100, 350, 60)
 
         self.buttons = [self.save_log_button, self.new_game_button, self.exit_game_button]
         self.visable = False
@@ -228,18 +235,15 @@ class GameOverPanel():
             return
         if not board_state.game_over:
             return
-        panel_rect = pygame.Rect(20, 20, 420, 500)
-        pygame.draw.rect(screen, panel_color, panel_rect, border_radius=3)
-        screen.set_clip(panel_rect)
+        #panel_rect = pygame.Rect(41, 41, 1300, 695)
+        pygame.draw.rect(screen, panel_color, self.panel_rect, border_radius=4)
+        screen.set_clip(self.panel_rect)
 
         title = title_font.render("GAME OVER", True, color)
-        screen.blit(title, (30, 40))
+        screen.blit(title, (self.panel_rect.centerx - title.get_width() // 2, self.panel_rect.top + 20))
 
-        winner_txt = title_font.render(f"Winner: {board_state.winner}", True, color)
-        screen.blit(winner_txt, (30, 80))
-
-        game_stats = ui_font.render(f"Total Game Moves: {len(board_state.moveLog.log)}", True, color)
-        screen.blit(game_stats, (30, 120))
+        winner_txt = win_font.render(f"{board_state.winner} Wins!", True, color)
+        screen.blit(winner_txt, (self.panel_rect.centerx - winner_txt.get_width() // 2, self.panel_rect.top + 200))
 
         screen.set_clip(None)
 
