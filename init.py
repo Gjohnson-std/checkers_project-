@@ -39,7 +39,8 @@ from board import (
     BoardState,
     create_board,
     create_all_pieces,
-    MoveLogPanel
+    MoveLogPanel,
+    GameOverPanel
 )
 
 
@@ -181,6 +182,16 @@ def handle_game(event):
         move_log_panel.visable = not move_log_panel.visable
         return
 
+    if board_state.game_over:
+        game_over_panel.visable = True
+        if game_over_panel.save_log_button.collidepoint(event.pos):
+            board_state.moveLog.moveLog_to_CSV(None)
+        elif game_over_panel.new_game_button.collidepoint(event.pos):
+            reset_game()
+        elif game_over_panel.exit_game_button.collidepoint(event.pos):
+            pygame.quit()
+        return
+
     x, y = event.pos
     board_col_x = x - board_x
     board_row_y = y - board_y
@@ -222,6 +233,12 @@ def draw_game():
     button_text = "Hide Log" if move_log_panel.visable else "Show Log"
     draw_button(move_log_panel.button_rect, button_text)
     move_log_panel.draw(gameDisplay, board_state.moveLog, ui_font, font, WHITE_COLOR, BLACK_COLOR)
+    game_over_panel.draw(gameDisplay, board_state, ui_font, font, WHITE_COLOR, BLACK_COLOR)
+    game_over_panel.visable = board_state.game_over
+    if game_over_panel.visable:
+        draw_button(game_over_panel.save_log_button, "Save Game Log")
+        draw_button(game_over_panel.new_game_button, "New Game")
+        draw_button(game_over_panel.exit_game_button, "Exit Game")
 
 
 
@@ -232,6 +249,16 @@ def draw_build_version():
         (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10),
     )
 
+def reset_game():
+    global all_pieces
+    global board_state
+    global move_log_panel
+    global game_over_panel
+    all_pieces = create_all_pieces()
+    board_state = BoardState(all_pieces)
+    move_log_panel.visible = True
+    game_over_panel.visible = False
+    navigate.selected_piece = None
 
 ## --------------------------------------------------
 #  Dictionaries
@@ -240,13 +267,15 @@ def draw_build_version():
 GAME_CREATION = {
     "board": create_board,
     "pieces": create_all_pieces,
-    "move_log": MoveLogPanel()
+    "move_log": MoveLogPanel(),
+    "game_over": GameOverPanel()
 }
  #initialize the board and pieces
 GAME_CREATION["board"]()
 all_pieces = GAME_CREATION["pieces"]()
 board_state = BoardState(all_pieces)
 move_log_panel = GAME_CREATION["move_log"]
+game_over_panel = GAME_CREATION["game_over"]
 
 running = True
 

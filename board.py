@@ -211,6 +211,38 @@ class MoveLogPanel():
         if self.button_rect.collidepoint(pos):
             self.visable = not self.visable
 
+class GameOverPanel():
+    """Displays winner and gives player option to save game, replay game, or exit game"""
+    def __init__(self):
+        """Game over panel that will be presented after the game has been won / ended"""
+        self.save_log_button = pygame.Rect(30, 320, 400, 50)
+        self.new_game_button = pygame.Rect(30, 380, 400, 50)
+        self.exit_game_button = pygame.Rect(30, 440, 400, 50)
+
+        self.buttons = [self.save_log_button, self.new_game_button, self.exit_game_button]
+        self.visable = False
+
+    def draw(self, screen, board_state, title_font, ui_font, panel_color, color):
+        """Game over panel contents"""
+        if not self.visable:
+            return
+        if not board_state.game_over:
+            return
+        panel_rect = pygame.Rect(20, 20, 420, 500)
+        pygame.draw.rect(screen, panel_color, panel_rect, border_radius=3)
+        screen.set_clip(panel_rect)
+
+        title = title_font.render("GAME OVER", True, color)
+        screen.blit(title, (30, 40))
+
+        winner_txt = title_font.render(f"Winner: {board_state.winner}", True, color)
+        screen.blit(winner_txt, (30, 80))
+
+        game_stats = ui_font.render(f"Total Game Moves: {len(board_state.moveLog.log)}", True, color)
+        screen.blit(game_stats, (30, 120))
+
+        screen.set_clip(None)
+
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules
@@ -230,6 +262,10 @@ class BoardState:
 
         #move log
         self.moveLog = MoveLog()
+
+        #winner
+        self.winner = None
+        self.game_over = False
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -293,6 +329,8 @@ class BoardState:
             return False
         if self.cells[new_row][new_col] is not None:
             return False
+        if self.game_over:
+            return
 
         row_delta = new_row - piece.row
         col_delta = new_col - piece.col
@@ -357,11 +395,12 @@ class BoardState:
             self.current_player = "Black" if self.current_player == "Red" else "Red"
 
         #winner check
-        winner = self.win_or_loss_check()
-        if winner:
-            self.moveLog.add_result(winner)
+        self.winner = self.win_or_loss_check()
+        if self.winner:
+            self.moveLog.add_result(self.winner)
             self.moveLog.print_move_message()
-            self.moveLog.moveLog_to_CSV(None)
+            #self.moveLog.moveLog_to_CSV(None)
+            self.game_over = True
 
         return True
 
@@ -414,7 +453,7 @@ class BoardState:
                 if 0 <= jump_row < BOARD_ROWS and 0 <= jump_col < BOARD_COLS:
                     middle_piece = self.cells[row][col]
 
-                    if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is not None:
+                    if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is None:
                         #True if the piece can make a valid jump over another piece
                         return True
         return False
@@ -437,6 +476,7 @@ class BoardState:
             return "Black"
         if not self.player_has_moves("Black"):
             return "Red"
+        return None
 
 # --------------------------------------------------
 # Starting positions
