@@ -127,3 +127,19 @@ class TestHome:
         pygame.event.clear()
         pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(home.WIDTH // 2, y), button=1))
         assert home.run_home_screen(pygame.Surface((home.WIDTH, home.HEIGHT))) == expected
+
+
+#----------------- network ----------------
+
+class TestNetwork:
+    def test_network_module_imports(self):
+        import network
+        assert hasattr(network, "Network")
+        pygame.event.clear()
+        network.Network()  # should not raise an error
+        network.Network().disconnect()  # should not raise an error
+        network.Network().send("test")  # should not raise an error
+        assert network.Network().receive() is None  # should not raise an error
+        assert network.Network().get_player() is None  # should not raise an error
+        assert network.Network().get_game() is None  # should not raise an error
+        assert network.Network().get_session() is None  # should not raise an error
