@@ -98,6 +98,100 @@ class TestSelectSession:
 
 # ---------------- pieces ----------------
 
+class TestBoardState:
+    def test_grid_tracks_piece_moves(self):
+        import board
+
+        pieces = board.create_all_pieces()
+        state = board.BoardState(pieces)
+        piece = state.cells[2][1]
+
+        assert len(state.cells) == 8
+        assert all(len(row) == 8 for row in state.cells)
+        assert sum(cell is not None for row in state.cells for cell in row) == 24
+        assert not state.move_piece(None, 3, 0)  # no piece on the starting square
+        assert not state.move_piece(piece, 2, 0)  # horizontal move
+        assert not state.move_piece(piece, 3, 1)  # vertical move
+        assert not state.move_piece(piece, 4, 3)  # more than one square
+        assert state.current_player == "Red"
+        assert not state.move_piece(state.cells[5][0], 4, 1)  # Black moves second
+
+        assert state.move_piece(piece, 3, 0)
+        assert state.current_player == "Black"
+        assert state.cells[2][1] is None
+        assert state.cells[3][0] is piece
+        assert (piece.row, piece.col) == (3, 0)
+
+        black_piece = state.cells[5][0]
+        assert state.move_piece(black_piece, 4, 1)
+        assert state.current_player == "Red"
+
+        piece.king = True
+        assert state.move_piece(piece, 2, 1)
+        assert state.current_player == "Black"
+        assert state.cells[3][0] is None
+        assert state.cells[2][1] is piece
+
+    def test_jump_captures_opponent(self):
+        import board
+
+        image = pygame.Surface((40, 40))
+        red_piece = board.CheckerPiece("", image, image, 0, 0, 3, 2, 46.875)
+        red_piece.set_pieceID(0, "Red")
+        black_piece = board.CheckerPiece("", image, image, 0, 0, 4, 3, 46.875)
+        black_piece.set_pieceID(0, "Black")
+        pieces = pygame.sprite.Group(red_piece, black_piece)
+        state = board.BoardState(pieces)
+
+        assert state.move_piece(red_piece, 5, 4)
+        assert state.cells[3][2] is None
+        assert state.cells[4][3] is None
+        assert state.cells[5][4] is red_piece
+        assert black_piece not in pieces
+        assert state.current_player == "Black"
+
+    def test_cannot_jump_own_piece(self):
+        import board
+
+        image = pygame.Surface((40, 40))
+        red_piece = board.CheckerPiece("", image, image, 0, 0, 3, 2, 46.875)
+        red_piece.set_pieceID(0, "Red")
+        other_red_piece = board.CheckerPiece("", image, image, 0, 0, 4, 3, 46.875)
+        other_red_piece.set_pieceID(1, "Red")
+        state = board.BoardState(pygame.sprite.Group(red_piece, other_red_piece))
+
+        assert not state.move_piece(red_piece, 5, 4)
+        assert state.cells[3][2] is red_piece
+        assert state.cells[4][3] is other_red_piece
+
+    def test_multiple_jumps_keep_piece_forced_until_chain_ends(self):
+        import board
+
+        image = pygame.Surface((40, 40))
+        red_piece = board.CheckerPiece("", image, image, 0, 0, 1, 0, 46.875)
+        red_piece.set_pieceID(0, "Red")
+        black_piece_one = board.CheckerPiece("", image, image, 0, 0, 2, 1, 46.875)
+        black_piece_one.set_pieceID(0, "Black")
+        black_piece_two = board.CheckerPiece("", image, image, 0, 0, 4, 3, 46.875)
+        black_piece_two.set_pieceID(1, "Black")
+        other_red_piece = board.CheckerPiece("", image, image, 0, 0, 1, 6, 46.875)
+        other_red_piece.set_pieceID(1, "Red")
+        pieces = pygame.sprite.Group(
+            red_piece, black_piece_one, black_piece_two, other_red_piece
+        )
+        state = board.BoardState(pieces)
+
+        assert state.move_piece(red_piece, 3, 2)
+        assert state.must_continue_piece is red_piece
+        assert state.current_player == "Red"
+        assert not state.move_piece(other_red_piece, 2, 5)
+        # The same piece captures again, then the turn passes to Black.
+        assert state.move_piece(red_piece, 5, 4)
+        assert state.must_continue_piece is None
+        assert state.current_player == "Black"
+        assert black_piece_one not in pieces and black_piece_two not in pieces
+
+
 class TestPieces:
     def test_move_and_king(self, pieces):
         img = pygame.Surface((40, 40))
