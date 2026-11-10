@@ -220,7 +220,9 @@ def handle_game(event):
         return
 
     if not session_state.network.connected or session_state.local_side is None:
+        return
     #toggle move log panel on and off
+
     if move_log_panel.button_rect.collidepoint(event.pos):
         move_log_panel.visable = not move_log_panel.visable
         return
