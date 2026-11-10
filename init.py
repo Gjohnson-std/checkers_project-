@@ -14,6 +14,8 @@ pygame.display.set_caption("Troubleshooters: Checkers Game")
 from config import (
     WIDTH,
     HEIGHT,
+    BOARD_SIZE,
+    board_y,
     TAN_COLOR,
     BLACK_COLOR,
     WHITE_COLOR,
@@ -36,8 +38,11 @@ import sessions as session_state
 
 from board import (
     BOARD,
+    BoardState,
     create_board,
     create_all_pieces,
+    MoveLogPanel,
+    GameOverPanel
 )
 
 
@@ -67,6 +72,11 @@ from select_session import (
 )
 
 from sessions import handle_session
+from sessions import (
+    handle_session,
+    session_buttons,
+)
+from restart import RestartVote
 
 
 # --------------------------------------------------
@@ -160,14 +170,76 @@ def handle_select_session(event):
 # Game screen
 # --------------------------------------------------
 
+restart_vote = RestartVote()
+restart_yes_button = pygame.Rect(WIDTH // 2 - 155, HEIGHT // 2 + 38, 140, 50)
+restart_no_button = pygame.Rect(WIDTH // 2 + 15, HEIGHT // 2 + 38, 140, 50)
+
+
+def reset_game():
+    global all_pieces, board_state
+
+    GAME_CREATION["board"]()
+    all_pieces = GAME_CREATION["pieces"]()
+    board_state = BoardState(all_pieces)
+    navigate.selected_piece = None
+
+
+def handle_restart_choice(event):
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        restart_vote.cancel()
+        return
+
+    if event.type != pygame.MOUSEBUTTONDOWN:
+        return
+
+    if restart_yes_button.collidepoint(event.pos):
+        if restart_vote.stage == "confirm":
+            restart_vote.confirm(True)
+        elif restart_vote.vote(True):
+            reset_game()
+        return
+
+    if restart_no_button.collidepoint(event.pos):
+        if restart_vote.stage == "confirm":
+            restart_vote.confirm(False)
+        elif restart_vote.stage == "vote":
+            restart_vote.vote(False)
+        return
+
+
 def handle_game(event):
+    if restart_vote.stage is not None:
+        handle_restart_choice(event)
+        return
+
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        restart_vote.request()
+        return
+
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
     if not session_state.network.connected or session_state.local_side is None:
+    #toggle move log panel on and off
+    if move_log_panel.button_rect.collidepoint(event.pos):
+        move_log_panel.visable = not move_log_panel.visable
+        return
+
+    if board_state.game_over:
+        game_over_panel.visable = True
+        if game_over_panel.save_log_button.collidepoint(event.pos):
+            board_state.moveLog.moveLog_to_CSV(None)
+        elif game_over_panel.new_game_button.collidepoint(event.pos):
+            reset_game()
+        elif game_over_panel.exit_game_button.collidepoint(event.pos):
+            pygame.quit()
         return
 
     x, y = event.pos
+    board_col_x = x - board_x
+    board_row_y = y - board_y
+    if not (0 <= board_col_x < BOARD_SIZE and 0 <= board_row_y < BOARD_SIZE):
+        return
 
     if navigate.selected_piece is None:
         for piece in all_pieces:
@@ -198,6 +270,33 @@ def handle_game(event):
         session_state.set_network_status(
             "Move could not be sent; connection lost."
         )
+    col = int(board_col_x // SQUARE_SIZE)
+    row = int(board_row_y // SQUARE_SIZE)
+    clicked_piece = board_state.cells[row][col]
+
+    if board_state.must_continue_piece is not None:
+        # A capture chain cannot be interrupted by selecting another piece.
+        navigate.selected_piece = board_state.must_continue_piece
+        if clicked_piece is None and board_state.move_piece(
+            navigate.selected_piece, row, col
+        ):
+            navigate.selected_piece = board_state.must_continue_piece
+        return
+
+    if clicked_piece is not None:
+        # Only the active player can choose a piece; the model checks moves again.
+        if board_state.is_current_player_piece(clicked_piece):
+            navigate.selected_piece = (
+                None if clicked_piece is navigate.selected_piece else clicked_piece
+            )
+        else:
+            navigate.selected_piece = None
+        return
+
+    if navigate.selected_piece is not None and board_state.move_piece(
+        navigate.selected_piece, row, col
+    ):
+        navigate.selected_piece = board_state.must_continue_piece
 
 
 def draw_game():
@@ -277,6 +376,34 @@ def process_network_events():
             session_state.set_network_status(
                 f"Network error: {message.get('message', 'unknown error')}"
             )
+    button_text = "Hide Log" if move_log_panel.visable else "Show Log"
+    draw_button(move_log_panel.button_rect, button_text)
+    move_log_panel.draw(gameDisplay, board_state.moveLog, ui_font, font, WHITE_COLOR, BLACK_COLOR)
+    game_over_panel.draw(gameDisplay, board_state, ui_font, font, WHITE_COLOR, BLACK_COLOR)
+    game_over_panel.visable = board_state.game_over
+    if game_over_panel.visable:
+        draw_button(game_over_panel.save_log_button, "Save Game Log")
+        draw_button(game_over_panel.new_game_button, "New Game")
+        draw_button(game_over_panel.exit_game_button, "Exit Game")
+
+
+    if restart_vote.stage is not None:
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 170))
+        gameDisplay.blit(overlay, (0, 0))
+
+        dialog = pygame.Rect(WIDTH // 2 - 280, HEIGHT // 2 - 95, 560, 200)
+        pygame.draw.rect(gameDisplay, TAN_COLOR, dialog, border_radius=10)
+        pygame.draw.rect(gameDisplay, BLACK_COLOR, dialog, 3, border_radius=10)
+
+        prompt = (
+            "Do you want to restart?"
+            if restart_vote.stage == "confirm"
+            else "Your opponent requested a restart. Do you agree?"
+        )
+        draw_centered_text(prompt, status_font, BLACK_COLOR, dialog.y + 35)
+        draw_button(restart_yes_button, "Yes")
+        draw_button(restart_no_button, "No")
 
 
 def draw_build_version():
@@ -286,6 +413,16 @@ def draw_build_version():
         (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10),
     )
 
+def reset_game():
+    global all_pieces
+    global board_state
+    global move_log_panel
+    global game_over_panel
+    all_pieces = create_all_pieces()
+    board_state = BoardState(all_pieces)
+    move_log_panel.visible = True
+    game_over_panel.visible = False
+    navigate.selected_piece = None
 
 ## --------------------------------------------------
 #  Dictionaries
@@ -293,11 +430,16 @@ def draw_build_version():
 
 GAME_CREATION = {
     "board": create_board,
-    "pieces": create_all_pieces
+    "pieces": create_all_pieces,
+    "move_log": MoveLogPanel(),
+    "game_over": GameOverPanel()
 }
  #initialize the board and pieces
 GAME_CREATION["board"]()
 all_pieces = GAME_CREATION["pieces"]()
+board_state = BoardState(all_pieces)
+move_log_panel = GAME_CREATION["move_log"]
+game_over_panel = GAME_CREATION["game_over"]
 
 running = True
 
