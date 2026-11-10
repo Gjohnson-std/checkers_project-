@@ -15,6 +15,7 @@ from config import (
     WIDTH,
     HEIGHT,
     BOARD_SIZE,
+    board_y,
     TAN_COLOR,
     BLACK_COLOR,
     WHITE_COLOR,
@@ -72,6 +73,7 @@ from sessions import (
     handle_session,
     session_buttons,
 )
+from restart import RestartVote
 
 
 # --------------------------------------------------
@@ -172,7 +174,52 @@ def handle_select_session(event):
 # Game screen
 # --------------------------------------------------
 
+restart_vote = RestartVote()
+restart_yes_button = pygame.Rect(WIDTH // 2 - 155, HEIGHT // 2 + 38, 140, 50)
+restart_no_button = pygame.Rect(WIDTH // 2 + 15, HEIGHT // 2 + 38, 140, 50)
+
+
+def reset_game():
+    global all_pieces, board_state
+
+    GAME_CREATION["board"]()
+    all_pieces = GAME_CREATION["pieces"]()
+    board_state = BoardState(all_pieces)
+    navigate.selected_piece = None
+
+
+def handle_restart_choice(event):
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        restart_vote.cancel()
+        return
+
+    if event.type != pygame.MOUSEBUTTONDOWN:
+        return
+
+    if restart_yes_button.collidepoint(event.pos):
+        if restart_vote.stage == "confirm":
+            restart_vote.confirm(True)
+        elif restart_vote.vote(True):
+            reset_game()
+        return
+
+    if restart_no_button.collidepoint(event.pos):
+        if restart_vote.stage == "confirm":
+            restart_vote.confirm(False)
+        elif restart_vote.stage == "vote":
+            restart_vote.vote(False)
+        return
+
+
 def handle_game(event):
+    if restart_vote.stage is not None:
+        handle_restart_choice(event)
+        return
+
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        restart_vote.request()
+        return
+
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
@@ -223,6 +270,24 @@ def draw_game():
     draw_button(move_log_panel.button_rect, button_text)
     move_log_panel.draw(gameDisplay, board_state.moveLog, ui_font, font, WHITE_COLOR, BLACK_COLOR)
 
+
+    if restart_vote.stage is not None:
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 170))
+        gameDisplay.blit(overlay, (0, 0))
+
+        dialog = pygame.Rect(WIDTH // 2 - 280, HEIGHT // 2 - 95, 560, 200)
+        pygame.draw.rect(gameDisplay, TAN_COLOR, dialog, border_radius=10)
+        pygame.draw.rect(gameDisplay, BLACK_COLOR, dialog, 3, border_radius=10)
+
+        prompt = (
+            "Do you want to restart?"
+            if restart_vote.stage == "confirm"
+            else "Your opponent requested a restart. Do you agree?"
+        )
+        draw_centered_text(prompt, status_font, BLACK_COLOR, dialog.y + 35)
+        draw_button(restart_yes_button, "Yes")
+        draw_button(restart_no_button, "No")
 
 
 def draw_build_version():
