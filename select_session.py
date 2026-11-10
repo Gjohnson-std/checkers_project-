@@ -1,6 +1,7 @@
 import pygame
 from navigate import go_to
 from config import BLACK_COLOR, WIDTH, HEIGHT
+import sessions
 # --------------------------------------------------
 # Screen Settings
 # --------------------------------------------------
@@ -70,10 +71,11 @@ def draw_button(surface, button, text, font):
 
 # this functions allows for movement to the next screens
 def host_game():
-    go_to("game")
+    if sessions.start_host():
+        go_to("game")
 
 def join_game():
-    go_to("sessions")
+    sessions.start_join()
 
 def session_load_screen(surface, title_font, button_font):
 
@@ -108,6 +110,12 @@ def session_load_screen(surface, title_font, button_font):
         "Join a Session",
         button_font
     )
+    if sessions.status_message.startswith("Could not host:"):
+        error = button_font.render(sessions.status_message, True, BLACK_COLOR)
+        surface.blit(
+            error,
+            error.get_rect(center=(WIDTH // 2, join_session_button.bottom + 35)),
+        )
 
 
 # --------------------------------------------------

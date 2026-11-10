@@ -34,6 +34,7 @@ from config import (
 
 
 import navigate
+import sessions as session_state
 
 from board import (
     BOARD,
@@ -70,6 +71,7 @@ from select_session import (
     session_load_screen,
 )
 
+from sessions import handle_session
 from sessions import (
     handle_session,
     session_buttons,
@@ -152,14 +154,7 @@ def draw_login():
 
 
 def draw_session():
-    draw_centered_text(
-        "Join a Game Session", title_font, BLACK_COLOR, HEIGHT // 2 - 200
-    )
-
-    for btn in session_buttons:
-        btn.draw(gameDisplay, ui_font, TAN_COLOR, BLACK_COLOR, BLACK_COLOR)
-
-    draw_button(back_button, "Back")
+    session_state.draw_session(gameDisplay)
 
 
 def draw_select_session():
@@ -224,6 +219,7 @@ def handle_game(event):
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
+    if not session_state.network.connected or session_state.local_side is None:
     #toggle move log panel on and off
     if move_log_panel.button_rect.collidepoint(event.pos):
         move_log_panel.visable = not move_log_panel.visable
@@ -245,6 +241,35 @@ def handle_game(event):
     if not (0 <= board_col_x < BOARD_SIZE and 0 <= board_row_y < BOARD_SIZE):
         return
 
+    if navigate.selected_piece is None:
+        for piece in all_pieces:
+            if (
+                piece.rect.collidepoint((x, y))
+                and piece.pieceID.startswith(f"{session_state.local_side} ")
+            ):
+                navigate.selected_piece = piece
+                return
+        return
+
+    col = int((x - board_x) // SQUARE_SIZE)
+    row = int((y - board_y) // SQUARE_SIZE)
+    selected = navigate.selected_piece
+    old_row, old_col = selected.row, selected.col
+    if not (0 <= row < 8 and 0 <= col < 8):
+        navigate.selected_piece = None
+        return
+
+    selected.move(row, col)
+    navigate.selected_piece = None
+    if not session_state.network.send({
+        "type": "move",
+        "from": [old_row, old_col],
+        "to": [row, col],
+    }):
+        selected.move(old_row, old_col)
+        session_state.set_network_status(
+            "Move could not be sent; connection lost."
+        )
     col = int(board_col_x // SQUARE_SIZE)
     row = int(board_row_y // SQUARE_SIZE)
     clicked_piece = board_state.cells[row][col]
@@ -277,6 +302,80 @@ def handle_game(event):
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
+    status = status_font.render(
+        session_state.status_message,
+        True,
+        BLACK_COLOR,
+    )
+    gameDisplay.blit(status, status.get_rect(center=(WIDTH // 2, board_y - 24)))
+
+
+def apply_remote_move(data):
+    if not isinstance(data, dict) or data.get("type") != "move":
+        session_state.set_network_status(
+            "Received an unsupported network message."
+        )
+        return
+
+    origin = data.get("from")
+    destination = data.get("to")
+    if (
+        not isinstance(origin, list)
+        or not isinstance(destination, list)
+        or len(origin) != 2
+        or len(destination) != 2
+        or any(type(value) is not int for value in origin + destination)
+    ):
+        session_state.set_network_status("Received an invalid move.")
+        return
+
+    from_row, from_col = origin
+    to_row, to_col = destination
+    if any(not 0 <= value < 8 for value in (from_row, from_col, to_row, to_col)):
+        session_state.set_network_status("Received an out-of-board move.")
+        return
+
+    opponent_side = "Black" if session_state.local_side == "Red" else "Red"
+    piece = next(
+        (
+            candidate
+            for candidate in all_pieces
+            if candidate.row == from_row
+            and candidate.col == from_col
+            and candidate.pieceID.startswith(f"{opponent_side} ")
+        ),
+        None,
+    )
+    if piece is None:
+        session_state.set_network_status(
+            "Received a move for a piece that is not available."
+        )
+        return
+
+    piece.move(to_row, to_col)
+    session_state.set_network_status("Opponent moved.")
+
+
+def process_network_events():
+    for message in session_state.network.poll():
+        message_type = message.get("type")
+        if message_type == "connected":
+            session_state.set_connecting(False)
+            session_state.set_network_status(
+                f"Opponent connected. You are {session_state.local_side}."
+            )
+            if session_state.local_side == "Black":
+                navigate.go_to("game")
+        elif message_type == "message":
+            apply_remote_move(message.get("data"))
+        elif message_type == "disconnected":
+            session_state.set_network_status("Opponent disconnected.")
+            session_state.network.close()
+        elif message_type == "error":
+            session_state.set_connecting(False)
+            session_state.set_network_status(
+                f"Network error: {message.get('message', 'unknown error')}"
+            )
     button_text = "Hide Log" if move_log_panel.visable else "Show Log"
     draw_button(move_log_panel.button_rect, button_text)
     move_log_panel.draw(gameDisplay, board_state.moveLog, ui_font, font, WHITE_COLOR, BLACK_COLOR)
@@ -366,10 +465,12 @@ DRAW_FUNCS = {
 # --------------------------------------------------
 
 while running:
+    process_network_events()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+            session_state.network.close()
             continue
 
         EVENT_HANDLERS[navigate.screen](event)
