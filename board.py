@@ -13,6 +13,9 @@ import pygame
 import pandas as pd
 from datetime import datetime
 
+pygame.font.init()
+win_font = pygame.font.SysFont("arial", 200, bold=True)
+
 # --------------------------------------------------
 # Board configuration
 # --------------------------------------------------
@@ -211,6 +214,39 @@ class MoveLogPanel():
         if self.button_rect.collidepoint(pos):
             self.visable = not self.visable
 
+class GameOverPanel():
+    """Displays winner and gives player option to save game, replay game, or exit game"""
+    def __init__(self):
+        """Game over panel that will be presented after the game has been won / ended"""
+        self.panel_rect = pygame.Rect(41, 41, 1300, 695)
+        #self.save_log_button = pygame.Rect(50, 278, 1282, 130)
+        self.save_log_button = pygame.Rect(self.panel_rect.centerx - 545, self.panel_rect.bottom - 100, 350, 60)
+        #self.new_game_button = pygame.Rect(50, 417, 1282, 130)
+        self.new_game_button = pygame.Rect(self.panel_rect.centerx - 175, self.panel_rect.bottom - 100, 350, 60)
+        #self.exit_game_button = pygame.Rect(50, 556, 1282, 130)
+        self.exit_game_button = pygame.Rect(self.panel_rect.centerx + 195, self.panel_rect.bottom - 100, 350, 60)
+
+        self.buttons = [self.save_log_button, self.new_game_button, self.exit_game_button]
+        self.visable = False
+
+    def draw(self, screen, board_state, title_font, ui_font, panel_color, color):
+        """Game over panel contents"""
+        if not self.visable:
+            return
+        if not board_state.game_over:
+            return
+        #panel_rect = pygame.Rect(41, 41, 1300, 695)
+        pygame.draw.rect(screen, panel_color, self.panel_rect, border_radius=4)
+        screen.set_clip(self.panel_rect)
+
+        title = title_font.render("GAME OVER", True, color)
+        screen.blit(title, (self.panel_rect.centerx - title.get_width() // 2, self.panel_rect.top + 20))
+
+        winner_txt = win_font.render(f"{board_state.winner} Wins!", True, color)
+        screen.blit(winner_txt, (self.panel_rect.centerx - winner_txt.get_width() // 2, self.panel_rect.top + 200))
+
+        screen.set_clip(None)
+
 
 ## ----------------------------------------------------------
 # Piece Movement using checker rules
@@ -230,6 +266,10 @@ class BoardState:
 
         #move log
         self.moveLog = MoveLog()
+
+        #winner
+        self.winner = None
+        self.game_over = False
 
         # Build the starting occupancy grid from the pieces' row and column values.
         for piece in pieces:
@@ -293,6 +333,8 @@ class BoardState:
             return False
         if self.cells[new_row][new_col] is not None:
             return False
+        if self.game_over:
+            return
 
         row_delta = new_row - piece.row
         col_delta = new_col - piece.col
@@ -357,11 +399,12 @@ class BoardState:
             self.current_player = "Black" if self.current_player == "Red" else "Red"
 
         #winner check
-        winner = self.win_or_loss_check()
-        if winner:
-            self.moveLog.add_result(winner)
+        self.winner = self.win_or_loss_check()
+        if self.winner:
+            self.moveLog.add_result(self.winner)
             self.moveLog.print_move_message()
-            self.moveLog.moveLog_to_CSV(None)
+            #self.moveLog.moveLog_to_CSV(None)
+            self.game_over = True
 
         return True
 
@@ -414,7 +457,7 @@ class BoardState:
                 if 0 <= jump_row < BOARD_ROWS and 0 <= jump_col < BOARD_COLS:
                     middle_piece = self.cells[row][col]
 
-                    if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is not None:
+                    if middle_piece is not None and middle_piece.color != piece.color and self.cells[jump_row][jump_col] is None:
                         #True if the piece can make a valid jump over another piece
                         return True
         return False
@@ -437,6 +480,7 @@ class BoardState:
             return "Black"
         if not self.player_has_moves("Black"):
             return "Red"
+        return None
 
 # --------------------------------------------------
 # Starting positions
