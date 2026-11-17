@@ -45,6 +45,7 @@ class HUD:
         }
         self.last_timer_update = pygame.time.get_ticks()
         self.active_timer = "Red"
+        self.timer_started = False
 
 
     def draw(self, surface, board_state):
@@ -121,6 +122,8 @@ class HUD:
 # Timer Logic
 # --------------------------------------------------
     def updateTimer(self, board_state):
+        if not self.timer_started:
+            return
         current_time = pygame.time.get_ticks()
         elapsed = (current_time - self.last_timer_update) / 1000
         current_player = board_state.current_player
@@ -131,6 +134,13 @@ class HUD:
         # Switch current player timer
         self.active_timer = current_player
         self.last_timer_update = current_time
+        
+# Timer will only start once opponent joins 
+    def startTimer(self, board_state):
+        self.timer_started = True
+        self.active_timer = board_state.current_player
+        self.last_timer_update = pygame.time.get_ticks()
+
 # --------------------------------------------------
 # Displaying the Timer
 # --------------------------------------------------

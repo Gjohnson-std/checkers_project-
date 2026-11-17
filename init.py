@@ -373,6 +373,9 @@ def process_network_events():
             session_state.set_network_status(
                 f"Opponent connected. You are {session_state.local_side}."
             )
+            # Added this line to only start  HUD timer once opponent has connected
+            hud.startTimer(board_state)
+
             if session_state.local_side == "Black":
                 navigate.go_to("game")
         elif message_type == "message":
