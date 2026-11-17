@@ -159,7 +159,7 @@ class HUD:
         icon = pygame.transform.smoothscale(sprite, (icon_size, icon_size))
         text = self.count_font.render(turn_text, True, (255,255,255))
         center_x = self.x + int(705 * self.scale)
-        center_y = self.y + int(65 * self.scale)
+        center_y = self.y + int(90 * self.scale)
         total_width = icon_size + 8 + text.get_width()
         pos_x = center_x - total_width // 2
         pos_y = center_y - icon_size // 2
