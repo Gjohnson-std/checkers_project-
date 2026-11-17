@@ -263,6 +263,9 @@ class BoardState:
         # Red starts. A capture chain keeps the same piece active until it ends.
         self.current_player = "Red"
         self.must_continue_piece = None
+# Stores pieces captured during the game
+        self.captured_pieces = []
+
 
         #move log
         self.moveLog = MoveLog()
@@ -369,6 +372,9 @@ class BoardState:
             middle_col = piece.col + col_delta // 2
             self.cells[middle_row][middle_col] = None
             cap_log = captured_piece
+
+            self.captured_pieces.append(captured_piece)
+            
             # Remove the captured sprite from its Pygame groups so it is no longer drawn.
             captured_piece.kill()
         self.cells[new_row][new_col] = piece

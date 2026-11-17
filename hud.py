@@ -1,6 +1,7 @@
 import pygame
 from config import WIDTH, HEIGHT, ASSETS_DIR
 from board import red_piece, red_king, black_piece, black_king
+import sessions
 
 # --------------------------------------------------
 # HUD aspect ratio and loading 
@@ -47,15 +48,64 @@ class HUD:
         self.active_timer = "Red"
         self.timer_started = False
 
-
     def draw(self, surface, board_state):
         surface.blit(self.frame, (self.x, self.y))
         self.updateTimer(board_state)
         counts = self.pieceCounts(board_state)
         self.drawPieceCounts(surface, counts)
+        self.drawCapturedPieces(surface, board_state)
         self.drawTurn(surface, board_state)
         self.drawTimer(surface)
 
+# --------------------------------------------------
+# Displaying Captured Pieces (left and right)
+# --------------------------------------------------
+
+# Method to get the Captured pieces in the current game based on color
+    def getCapturedPieces(self, board_state):
+        """Separates captured pieces based on the original color / king status"""
+        captured = {
+            "Red": [],
+            "Black": []
+        }
+        for piece in board_state.captured_pieces:
+            captured[piece.color].append(piece)
+        return captured
+    def drawCapturedPieces(self, surface, board_state):
+        captured = self.getCapturedPieces(board_state)
+        local_player = sessions.local_side
+        opponent = "Black" if local_player == "Red" else "Red"
+        # Left = pieces captured by local player
+        # Right = pieces captured by opponent 
+
+        left_pieces = captured[opponent]
+        right_pieces = captured[local_player]
+        icon_size = int(30 * self.scale)
+        spacing = int(35 * self.scale)
+        # Display captured pieces on left
+        for index, piece in enumerate(left_pieces):
+            key = piece.color.lower()
+            if piece.king:
+                key += "_king"
+            sprite = pygame.transform.smoothscale(
+                self.piece_sprites[key],
+                (icon_size, icon_size)
+            )
+            x = self.x + int(100 * self.scale) + index * spacing
+            y = self.y + int(450 * self.scale)
+            surface.blit(sprite, (x, y))
+        # Display captured pieces on right 
+        for index, piece in enumerate(right_pieces):
+            key = piece.color.lower()
+            if piece.king:
+                key += "_king"
+            sprite = pygame.transform.smoothscale(
+                self.piece_sprites[key],
+                (icon_size, icon_size)
+            )
+            x = self.x + int(1200 * self.scale) + index * spacing
+            y = self.y + int(450 * self.scale)
+            surface.blit(sprite, (x, y))
 # --------------------------------------------------
 # Live Piece Counts Logic
 # --------------------------------------------------
@@ -134,7 +184,7 @@ class HUD:
         # Switch current player timer
         self.active_timer = current_player
         self.last_timer_update = current_time
-        
+
 # Timer will only start once opponent joins 
     def startTimer(self, board_state):
         self.timer_started = True
