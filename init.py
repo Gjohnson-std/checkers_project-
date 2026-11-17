@@ -1,195 +1,86 @@
-from pathlib import Path
 
 import pygame
-
-from config import BLACK_COLOR, TAN_COLOR, WHITE_COLOR
-from pieces import (
-    red_piece,
-    black_piece,
-    create_red_pieces,
-    create_black_pieces
-)
-from credential_store import MAX_CREDENTIAL_LENGTH, save_credentials
-from sessions import SessionButton, session_ID
-
-
 pygame.init()
 
-
+from config import WIDTH, HEIGHT 
 # --------------------------------------------------
 # Window configuration
 # --------------------------------------------------
-
-WIDTH = 1920
-HEIGHT = 1080
 
 gameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Troubleshooters: Checkers Game")
 
 
-# --------------------------------------------------
-# Asset paths
-# --------------------------------------------------
-
-BASE_DIR = Path(__file__).resolve().parent
-
-bg_path = BASE_DIR / "Assets" / "bg.jpg"
-
-
-# --------------------------------------------------
-# Background
-# --------------------------------------------------
-
-bg = pygame.image.load(bg_path)
-bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
-
-ASSETS_DIR = BASE_DIR / "Assets"
-
-
-def load_asset(filename, size, alpha=True):
-    """Loads an image from Assets/ and scales it to size."""
-    image = pygame.image.load(ASSETS_DIR / filename)
-    image = image.convert_alpha() if alpha else image.convert()
-    return pygame.transform.scale(image, size)
+from config import (
+    WIDTH,
+    HEIGHT,
+    BOARD_SIZE,
+    board_y,
+    TAN_COLOR,
+    BLACK_COLOR,
+    WHITE_COLOR,
+    SQUARE_SIZE,
+    board_x,
+    board_y,
+    font,
+    title_font,
+    ui_font,
+    field_font,
+    status_font,
+    BUILD_VER,
+    bg,
+    back_button,
+)
 
 
-# Home screen images (loaded once, after the display exists)
-title_bg = load_asset("titlebg.png", (WIDTH, HEIGHT), alpha=False)
-title_img = load_asset("Title.png", (700, 350))
-login_img = load_asset("Login.png", (320, 140))
-settings_img = load_asset("Settings.png", (320, 140))
-exit_img = load_asset("Exit.png", (320, 140))
+import navigate
+import sessions as session_state
+
+from board import (
+    BOARD,
+    BoardState,
+    create_board,
+    create_all_pieces,
+    MoveLogPanel,
+    GameOverPanel
+)
 
 
-# --------------------------------------------------
-# Text
-# --------------------------------------------------
+from home import (
+    handle_home,
+    title_bg,
+    title_img,
+    login_img,
+    settings_img,
+    exit_img,
+    title_rect,
+    login_rect,
+    settings_rect,
+    exit_rect,
+)
 
-font = pygame.font.Font(None, 25)
-title_font = pygame.font.Font(None, 72)
-ui_font = pygame.font.Font(None, 42)
-field_font = pygame.font.Font(None, 36)
-status_font = pygame.font.Font(None, 28)
+from login import (
+    handle_login,
+    username_field,
+    password_field,
+    submit_button,
+)
 
-BUILD_VER = "troubleshooters-cg-v0.0.1 - alpha"
+from select_session import (
+    handle_session_click,
+    session_load_screen,
+)
 
-
-# --------------------------------------------------
-# Board configuration
-# --------------------------------------------------
-
-BOARD_SIZE = 375
-BOARD_ROWS = 8
-BOARD_COLS = 8
-SQUARE_SIZE = BOARD_SIZE / BOARD_COLS
-
-BOARD = pygame.Surface((BOARD_SIZE, BOARD_SIZE))
-board_x = (WIDTH - BOARD_SIZE) // 2
-board_y = (HEIGHT - BOARD_SIZE) // 2
-
-
-def create_board():
-    """
-    Draws the checkerboard onto BOARD.
-    """
-
-    for row in range(BOARD_ROWS):
-        for column in range(BOARD_COLS):
-
-            if (row + column) % 2 == 0:
-                color = WHITE_COLOR
-            else:
-                color = BLACK_COLOR
-
-            pygame.draw.rect(
-                BOARD,
-                color,
-                (
-                    column * SQUARE_SIZE,
-                    row * SQUARE_SIZE,
-                    SQUARE_SIZE,
-                    SQUARE_SIZE
-                )
-            )
-
-    pygame.draw.rect(
-        BOARD,
-        TAN_COLOR,
-        (0, 0, BOARD_SIZE, BOARD_SIZE),
-        5
-    )
+from sessions import handle_session
+from sessions import (
+    handle_session,
+    session_buttons,
+)
+from restart import RestartVote
 
 
 # --------------------------------------------------
-# Create board
-# --------------------------------------------------
-
-create_board()
-
-
-# --------------------------------------------------
-# Create pieces
-# --------------------------------------------------
-
-red_piece_set = create_red_pieces(red_piece, board_x, board_y)
-black_piece_set = create_black_pieces(black_piece, board_x, board_y)
-
-all_pieces = pygame.sprite.Group()
-all_pieces.add(red_piece_set)
-all_pieces.add(black_piece_set)
-
-
-# --------------------------------------------------
-# State
-# --------------------------------------------------
-
-running = True
-screen = "home"
-username = ""
-password = ""
-active_field = "username"
-status_message = ""
-selected_piece = None
-selected_session = None
-
-
-# --------------------------------------------------
-# UI rectangles
-# --------------------------------------------------
-
-# Home screen button rects (positions taken from home.py)
-title_rect = title_img.get_rect(center=(WIDTH // 2, 220))
-login_rect = login_img.get_rect(center=(WIDTH // 2, 520))
-settings_rect = settings_img.get_rect(center=(WIDTH // 2, 700))
-exit_rect = exit_img.get_rect(center=(WIDTH // 2, 880))
-
-username_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 90, 500, 58)
-password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
-submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
-back_button = pygame.Rect(40, 40, 130, 52)
-
-# field name -> rect, used for click detection and drawing
-LOGIN_FIELDS = {
-    "username": username_field,
-    "password": password_field,
-}
-
-
-# --------------------------------------------------
-# Session buttons
-# --------------------------------------------------
-
-session_buttons = []
-start_y = HEIGHT // 2 - 40
-
-for name in session_ID:
-    rect = pygame.Rect(WIDTH // 2 - 150, start_y, 300, 50)
-    session_buttons.append(SessionButton(rect, name))
-    start_y += 70
-
-
-# --------------------------------------------------
-# Drawing helpers
+# Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
 # --------------------------------------------------
 
 def draw_centered_text(text, text_font, color, y):
@@ -213,82 +104,6 @@ def draw_button(rect, label):
     )
 
 
-# --------------------------------------------------
-# Screen transitions
-# --------------------------------------------------
-
-def go_to(new_screen):
-    """
-    Single place for every screen change. Handles any setup/teardown
-    a screen needs (text input on/off, clearing the login form, etc.).
-    """
-    global screen, username, password, active_field, status_message
-
-    screen = new_screen
-
-    if new_screen == "login":
-        username = ""
-        password = ""
-        active_field = "username"
-        status_message = ""
-        pygame.key.start_text_input()
-        return
-
-    pygame.key.stop_text_input()
-
-
-def attempt_login():
-    global status_message
-
-    if not username or not password:
-        status_message = "Enter both a username and password."
-        return
-
-    try:
-        save_credentials(username, password)
-    except (OSError, ValueError, UnicodeDecodeError) as error:
-        status_message = f"Could not save login: {error}"
-        return
-
-    status_message = "Login saved."
-    go_to("session")
-
-
-# --------------------------------------------------
-# Home screen
-# --------------------------------------------------
-
-def home_login():
-    go_to("login")
-
-
-def home_settings():
-    # No settings screen yet: add "settings" to the dispatch tables later.
-    print("Settings screen not implemented yet")
-
-
-def home_exit():
-    global running
-    running = False
-
-
-# button rect -> action
-HOME_BUTTONS = (
-    (login_rect, home_login),
-    (settings_rect, home_settings),
-    (exit_rect, home_exit),
-)
-
-
-def handle_home(event):
-    if event.type != pygame.MOUSEBUTTONDOWN:
-        return
-
-    for rect, action in HOME_BUTTONS:
-        if rect.collidepoint(event.pos):
-            action()
-            return
-
 
 def draw_home():
     gameDisplay.blit(title_bg, (0, 0))
@@ -298,93 +113,29 @@ def draw_home():
     gameDisplay.blit(exit_img, exit_rect)
 
 
-# --------------------------------------------------
-# Login screen
-# --------------------------------------------------
-
-def login_click(event):
-    global active_field
-
-    if back_button.collidepoint(event.pos):
-        go_to("home")
-        return
-
-    if submit_button.collidepoint(event.pos):
-        attempt_login()
-        return
-
-    for field_name, field_rect in LOGIN_FIELDS.items():
-        if field_rect.collidepoint(event.pos):
-            active_field = field_name
-
-
-def login_text(event):
-    global username, password
-
-    if active_field == "username":
-        username += event.text[:MAX_CREDENTIAL_LENGTH - len(username)]
-
-    if active_field == "password":
-        password += event.text[:MAX_CREDENTIAL_LENGTH - len(password)]
-
-
-def login_backspace():
-    global username, password
-
-    if active_field == "username":
-        username = username[:-1]
-
-    if active_field == "password":
-        password = password[:-1]
-
-
-def login_switch_field():
-    global active_field
-    active_field = "password" if active_field == "username" else "username"
-
-
-# key -> action, for the login screen's KEYDOWN events
-LOGIN_KEY_ACTIONS = {
-    pygame.K_BACKSPACE: login_backspace,
-    pygame.K_TAB: login_switch_field,
-    pygame.K_RETURN: attempt_login,
-}
-
-
-def login_key(event):
-    action = LOGIN_KEY_ACTIONS.get(event.key)
-    if action:
-        action()
-
-
-# event type -> handler, for the login screen
-LOGIN_EVENT_HANDLERS = {
-    pygame.MOUSEBUTTONDOWN: login_click,
-    pygame.TEXTINPUT: login_text,
-    pygame.KEYDOWN: login_key,
-}
-
-
-def handle_login(event):
-    handler = LOGIN_EVENT_HANDLERS.get(event.type)
-    if handler:
-        handler(event)
-
 
 def draw_login():
     draw_centered_text("Login", title_font, BLACK_COLOR, HEIGHT // 2 - 230)
     draw_button(back_button, "Back")
 
     for rect, label, value, field_name in (
-        (username_field, "Username", username, "username"),
-        (password_field, "Password", "*" * len(password), "password"),
+        (username_field, "Username", navigate.username, "username"),
+        (password_field, "Password", "*" * len(navigate.password), "password"),
     ):
         pygame.draw.rect(gameDisplay, WHITE_COLOR, rect, border_radius=6)
-        border_color = TAN_COLOR if active_field == field_name else BLACK_COLOR
+
+        border_color = (
+            TAN_COLOR
+            if navigate.active_field == field_name
+            else BLACK_COLOR
+        )
+
         pygame.draw.rect(gameDisplay, border_color, rect, 3, border_radius=6)
+
         shown_text = value or label
         text_color = BLACK_COLOR if value else (110, 110, 110)
         rendered_value = field_font.render(shown_text, True, text_color)
+
         gameDisplay.blit(
             rendered_value,
             (rect.x + 14, rect.centery - rendered_value.get_height() // 2),
@@ -392,94 +143,269 @@ def draw_login():
 
     draw_button(submit_button, "Save & Play")
 
-    if status_message:
+    if navigate.status_message:
         draw_centered_text(
-            status_message, status_font, BLACK_COLOR, submit_button.bottom + 18
+            navigate.status_message,
+            status_font,
+            BLACK_COLOR,
+            submit_button.bottom + 18,
         )
 
 
-# --------------------------------------------------
-# Session screen
-# --------------------------------------------------
-
-def handle_session(event):
-    global selected_session
-
-    if event.type != pygame.MOUSEBUTTONDOWN:
-        return
-
-    if back_button.collidepoint(event.pos):
-        go_to("home")
-        return
-
-    for btn in session_buttons:
-        if btn.is_clicked(event.pos):
-            selected_session = btn.label
-            print("Joining:", selected_session)
-            go_to("game")
-            return
-
 
 def draw_session():
-    draw_centered_text(
-        "Join a Game Session", title_font, BLACK_COLOR, HEIGHT // 2 - 200
-    )
+    session_state.draw_session(gameDisplay)
 
-    for btn in session_buttons:
-        btn.draw(gameDisplay, ui_font, TAN_COLOR, BLACK_COLOR, BLACK_COLOR)
 
-    draw_button(back_button, "Back")
+def draw_select_session():
+    session_load_screen(gameDisplay, title_font, ui_font)
+
+
+def handle_select_session(event):
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        handle_session_click(event)
 
 
 # --------------------------------------------------
 # Game screen
 # --------------------------------------------------
 
-def handle_game(event):
-    global selected_piece
+restart_vote = RestartVote()
+restart_yes_button = pygame.Rect(WIDTH // 2 - 155, HEIGHT // 2 + 38, 140, 50)
+restart_no_button = pygame.Rect(WIDTH // 2 + 15, HEIGHT // 2 + 38, 140, 50)
+
+
+def reset_game():
+    global all_pieces, board_state
+
+    GAME_CREATION["board"]()
+    all_pieces = GAME_CREATION["pieces"]()
+    board_state = BoardState(all_pieces)
+    navigate.selected_piece = None
+
+
+def handle_restart_choice(event):
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        restart_vote.cancel()
+        return
 
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
-    x, y = event.pos
+    if restart_yes_button.collidepoint(event.pos):
+        if restart_vote.stage == "confirm":
+            restart_vote.confirm(True)
+        elif restart_vote.vote(True):
+            reset_game()
+        return
 
-    if selected_piece is None:
+    if restart_no_button.collidepoint(event.pos):
+        if restart_vote.stage == "confirm":
+            restart_vote.confirm(False)
+        elif restart_vote.stage == "vote":
+            restart_vote.vote(False)
+        return
+
+
+def handle_game(event):
+    if restart_vote.stage is not None:
+        handle_restart_choice(event)
+        return
+
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        restart_vote.request()
+        return
+
+    if event.type != pygame.MOUSEBUTTONDOWN:
+        return
+
+    if not session_state.network.connected or session_state.local_side is None:
+        return
+    #toggle move log panel on and off
+
+    if move_log_panel.button_rect.collidepoint(event.pos):
+        move_log_panel.visable = not move_log_panel.visable
+        return
+
+    if board_state.game_over:
+        game_over_panel.visable = True
+        if game_over_panel.save_log_button.collidepoint(event.pos):
+            board_state.moveLog.moveLog_to_CSV(None)
+        elif game_over_panel.new_game_button.collidepoint(event.pos):
+            reset_game()
+        elif game_over_panel.exit_game_button.collidepoint(event.pos):
+            pygame.quit()
+        return
+
+    x, y = event.pos
+    board_col_x = x - board_x
+    board_row_y = y - board_y
+    if not (0 <= board_col_x < BOARD_SIZE and 0 <= board_row_y < BOARD_SIZE):
+        return
+
+    if navigate.selected_piece is None:
         for piece in all_pieces:
-            if piece.rect.collidepoint((x, y)):
-                selected_piece = piece
+            if (
+                piece.rect.collidepoint((x, y))
+                and piece.pieceID.startswith(f"{session_state.local_side} ")
+            ):
+                navigate.selected_piece = piece
                 return
         return
 
     col = int((x - board_x) // SQUARE_SIZE)
     row = int((y - board_y) // SQUARE_SIZE)
+    selected = navigate.selected_piece
+    old_row, old_col = selected.row, selected.col
+    if not (0 <= row < 8 and 0 <= col < 8):
+        navigate.selected_piece = None
+        return
 
-    selected_piece.move(row, col)
-    selected_piece = None
+    selected.move(row, col)
+    navigate.selected_piece = None
+    if not session_state.network.send({
+        "type": "move",
+        "from": [old_row, old_col],
+        "to": [row, col],
+    }):
+        selected.move(old_row, old_col)
+        session_state.set_network_status(
+            "Move could not be sent; connection lost."
+        )
+    col = int(board_col_x // SQUARE_SIZE)
+    row = int(board_row_y // SQUARE_SIZE)
+    clicked_piece = board_state.cells[row][col]
+
+    if board_state.must_continue_piece is not None:
+        # A capture chain cannot be interrupted by selecting another piece.
+        navigate.selected_piece = board_state.must_continue_piece
+        if clicked_piece is None and board_state.move_piece(
+            navigate.selected_piece, row, col
+        ):
+            navigate.selected_piece = board_state.must_continue_piece
+        return
+
+    if clicked_piece is not None:
+        # Only the active player can choose a piece; the model checks moves again.
+        if board_state.is_current_player_piece(clicked_piece):
+            navigate.selected_piece = (
+                None if clicked_piece is navigate.selected_piece else clicked_piece
+            )
+        else:
+            navigate.selected_piece = None
+        return
+
+    if navigate.selected_piece is not None and board_state.move_piece(
+        navigate.selected_piece, row, col
+    ):
+        navigate.selected_piece = board_state.must_continue_piece
 
 
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
+    status = status_font.render(
+        session_state.status_message,
+        True,
+        BLACK_COLOR,
+    )
+    gameDisplay.blit(status, status.get_rect(center=(WIDTH // 2, board_y - 24)))
 
 
-# --------------------------------------------------
-# Screen dispatch tables
-# To add a screen: write handle_x / draw_x, add one line to each dict.
-# --------------------------------------------------
+def apply_remote_move(data):
+    if not isinstance(data, dict) or data.get("type") != "move":
+        session_state.set_network_status(
+            "Received an unsupported network message."
+        )
+        return
 
-EVENT_HANDLERS = {
-    "home": handle_home,
-    "login": handle_login,
-    "session": handle_session,
-    "game": handle_game,
-}
+    origin = data.get("from")
+    destination = data.get("to")
+    if (
+        not isinstance(origin, list)
+        or not isinstance(destination, list)
+        or len(origin) != 2
+        or len(destination) != 2
+        or any(type(value) is not int for value in origin + destination)
+    ):
+        session_state.set_network_status("Received an invalid move.")
+        return
 
-DRAW_FUNCS = {
-    "home": draw_home,
-    "login": draw_login,
-    "session": draw_session,
-    "game": draw_game,
-}
+    from_row, from_col = origin
+    to_row, to_col = destination
+    if any(not 0 <= value < 8 for value in (from_row, from_col, to_row, to_col)):
+        session_state.set_network_status("Received an out-of-board move.")
+        return
+
+    opponent_side = "Black" if session_state.local_side == "Red" else "Red"
+    piece = next(
+        (
+            candidate
+            for candidate in all_pieces
+            if candidate.row == from_row
+            and candidate.col == from_col
+            and candidate.pieceID.startswith(f"{opponent_side} ")
+        ),
+        None,
+    )
+    if piece is None:
+        session_state.set_network_status(
+            "Received a move for a piece that is not available."
+        )
+        return
+
+    piece.move(to_row, to_col)
+    session_state.set_network_status("Opponent moved.")
+
+
+def process_network_events():
+    for message in session_state.network.poll():
+        message_type = message.get("type")
+        if message_type == "connected":
+            session_state.set_connecting(False)
+            session_state.set_network_status(
+                f"Opponent connected. You are {session_state.local_side}."
+            )
+            if session_state.local_side == "Black":
+                navigate.go_to("game")
+        elif message_type == "message":
+            apply_remote_move(message.get("data"))
+        elif message_type == "disconnected":
+            session_state.set_network_status("Opponent disconnected.")
+            session_state.network.close()
+        elif message_type == "error":
+            session_state.set_connecting(False)
+            session_state.set_network_status(
+                f"Network error: {message.get('message', 'unknown error')}"
+            )
+    button_text = "Hide Log" if move_log_panel.visable else "Show Log"
+    draw_button(move_log_panel.button_rect, button_text)
+    move_log_panel.draw(gameDisplay, board_state.moveLog, ui_font, font, WHITE_COLOR, BLACK_COLOR)
+    game_over_panel.draw(gameDisplay, board_state, ui_font, font, WHITE_COLOR, BLACK_COLOR)
+    game_over_panel.visable = board_state.game_over
+    if game_over_panel.visable:
+        draw_button(game_over_panel.save_log_button, "Save Game Log")
+        draw_button(game_over_panel.new_game_button, "New Game")
+        draw_button(game_over_panel.exit_game_button, "Exit Game")
+
+
+    if restart_vote.stage is not None:
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 170))
+        gameDisplay.blit(overlay, (0, 0))
+
+        dialog = pygame.Rect(WIDTH // 2 - 280, HEIGHT // 2 - 95, 560, 200)
+        pygame.draw.rect(gameDisplay, TAN_COLOR, dialog, border_radius=10)
+        pygame.draw.rect(gameDisplay, BLACK_COLOR, dialog, 3, border_radius=10)
+
+        prompt = (
+            "Do you want to restart?"
+            if restart_vote.stage == "confirm"
+            else "Your opponent requested a restart. Do you agree?"
+        )
+        draw_centered_text(prompt, status_font, BLACK_COLOR, dialog.y + 35)
+        draw_button(restart_yes_button, "Yes")
+        draw_button(restart_no_button, "No")
 
 
 def draw_build_version():
@@ -489,26 +415,73 @@ def draw_build_version():
         (WIDTH - team_text.get_width() - 10, HEIGHT - team_text.get_height() - 10),
     )
 
+def reset_game():
+    global all_pieces
+    global board_state
+    global move_log_panel
+    global game_over_panel
+    all_pieces = create_all_pieces()
+    board_state = BoardState(all_pieces)
+    move_log_panel.visible = True
+    game_over_panel.visible = False
+    navigate.selected_piece = None
 
+## --------------------------------------------------
+#  Dictionaries
+# --------------------------------------------------
+
+GAME_CREATION = {
+    "board": create_board,
+    "pieces": create_all_pieces,
+    "move_log": MoveLogPanel(),
+    "game_over": GameOverPanel()
+}
+ #initialize the board and pieces
+GAME_CREATION["board"]()
+all_pieces = GAME_CREATION["pieces"]()
+board_state = BoardState(all_pieces)
+move_log_panel = GAME_CREATION["move_log"]
+game_over_panel = GAME_CREATION["game_over"]
+
+running = True
+
+EVENT_HANDLERS = {
+    "home": handle_home,
+    "login": handle_login,
+    "select_session": handle_select_session,
+    "sessions": handle_session,
+    "session": handle_session,
+    "game": handle_game,
+}
+
+DRAW_FUNCS = {
+    "home": draw_home,
+    "login": draw_login,
+    "select_session": draw_select_session,
+    "sessions": draw_session,
+    "session": draw_session,
+    "game": draw_game,
+}
 # --------------------------------------------------
 # Game loop
 # --------------------------------------------------
 
 while running:
+    process_network_events()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+            session_state.network.close()
             continue
 
-        EVENT_HANDLERS[screen](event)
+        EVENT_HANDLERS[navigate.screen](event)
 
     gameDisplay.blit(bg, (0, 0))
-    DRAW_FUNCS[screen]()
+    DRAW_FUNCS[navigate.screen]()
     draw_build_version()
 
     pygame.display.flip()
 
 
 pygame.quit()
-

@@ -1,15 +1,11 @@
 import pygame
-
-
+from navigate import go_to
+from config import BLACK_COLOR, WIDTH, HEIGHT
+import sessions
 # --------------------------------------------------
 # Screen Settings
 # --------------------------------------------------
 
-WIDTH = 800
-HEIGHT = 600
-
-BLACK_COLOR = (0, 0, 0)
-WHITE_COLOR = (255, 255, 255)
 BUTTON_COLOR = (220, 220, 220)
 
 
@@ -73,6 +69,14 @@ def draw_button(surface, button, text, font):
 # Session Screen
 # --------------------------------------------------
 
+# this functions allows for movement to the next screens
+def host_game():
+    if sessions.start_host():
+        go_to("game")
+
+def join_game():
+    sessions.start_join()
+
 def session_load_screen(surface, title_font, button_font):
 
     # Page title
@@ -106,6 +110,12 @@ def session_load_screen(surface, title_font, button_font):
         "Join a Session",
         button_font
     )
+    if sessions.status_message.startswith("Could not host:"):
+        error = button_font.render(sessions.status_message, True, BLACK_COLOR)
+        surface.blit(
+            error,
+            error.get_rect(center=(WIDTH // 2, join_session_button.bottom + 35)),
+        )
 
 
 # --------------------------------------------------
@@ -115,9 +125,8 @@ def session_load_screen(surface, title_font, button_font):
 def handle_session_click(event):
 
     if host_game_button.collidepoint(event.pos):
-        return "game"
+        host_game()
+        return
 
     elif join_session_button.collidepoint(event.pos):
-        return "game"
-
-    return "session"
+        join_game()
