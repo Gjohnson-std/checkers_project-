@@ -78,6 +78,7 @@ from sessions import (
 )
 from restart import RestartVote
 
+from hud import HUD
 
 # --------------------------------------------------
 # Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
@@ -174,6 +175,10 @@ restart_vote = RestartVote()
 restart_yes_button = pygame.Rect(WIDTH // 2 - 155, HEIGHT // 2 + 38, 140, 50)
 restart_no_button = pygame.Rect(WIDTH // 2 + 15, HEIGHT // 2 + 38, 140, 50)
 
+# --------------------------------------------------
+# HUD overlay initialization
+# --------------------------------------------------
+hud = HUD()
 
 def reset_game():
     global all_pieces, board_state
@@ -304,6 +309,8 @@ def handle_game(event):
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
+    # Draw HUD added 
+    hud.draw(gameDisplay, board_state)
     status = status_font.render(
         session_state.status_message,
         True,
