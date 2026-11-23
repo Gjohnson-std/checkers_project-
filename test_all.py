@@ -99,6 +99,20 @@ class TestSelectSession:
 # ---------------- pieces ----------------
 
 class TestBoardState:
+    def test_refresh_rebuilds_grid_after_sprite_moves(self):
+        import board
+
+        pieces = board.create_all_pieces()
+        state = board.BoardState(pieces)
+        piece = state.cells[2][1]
+
+        piece.move(3, 0)
+        assert state.cells[2][1] is piece
+
+        state.refresh()
+        assert state.cells[2][1] is None
+        assert state.cells[3][0] is piece
+
     def test_grid_tracks_piece_moves(self):
         import board
 
