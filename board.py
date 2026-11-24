@@ -147,11 +147,12 @@ class MoveLog():
             piece.pieceID += " (KING)"
 
         self.log.append({
+            #changed move long to handle numeric coordinates and display alphabetical
             "turn": len(self.log) + 1,
             "action": "MOVE",
             "piece": piece.pieceID,
-            "from": (self.rowName[row], col),
-            "to": (self.rowName[new_row], new_col),
+            "from": (row, col),
+            "to": (new_row, new_col),
             "captured_piece": captured_piece.pieceID if captured_piece is not None else None,
             "captured_piece_pos": (self.rowName[captured_piece.row], captured_piece.col) if captured_piece is not None else None,
             "kinged_piece": has_been_kinged,
@@ -487,6 +488,15 @@ class BoardState:
         if not self.player_has_moves("Black"):
             return "Red"
         return None
+
+    def get_last_move(self):
+        """returns the most recent move from the move log so that it can be sent to the other player"""
+        if len(self.moveLog) == 0:
+            #if move log doesn't exist yet return
+            return None
+        move = self.moveLog.log[-1]
+        #get latest entry
+        return move["from"], move["to"]
 
 # --------------------------------------------------
 # Starting positions
