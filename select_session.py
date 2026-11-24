@@ -25,7 +25,7 @@ join_session_button = pygame.Rect(
     360,
     64
 )
-
+computer_game_button = pygame.Rect(WIDTH // 2 - 180, HEIGHT // 2 + 150, 360, 64)
 
 # --------------------------------------------------
 # Draw Button
@@ -109,6 +109,14 @@ def session_load_screen(surface, title_font, button_font):
         button_font
     )
 
+     # Computer button
+    draw_button(
+        surface,
+        computer_game_button,
+        "Play Against Computer",
+        button_font
+    )
+
 
 # --------------------------------------------------
 # Session Clicks
@@ -120,5 +128,9 @@ def handle_session_click(event):
         host_game()
         return
 
+    elif computer_game_button.collidepoint(event.pos):
+        go_to("computer_difficulty")
+        return
+    
     elif join_session_button.collidepoint(event.pos):
         join_game()

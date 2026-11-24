@@ -186,7 +186,90 @@ class BoardState:
                     capture_moves.append((target_row, target_col))
 
         return capture_moves
+    
+    # --------------------------------------------------
+    # Win / Loss Conditions
+    # --------------------------------------------------
 
+    def get_legal_moves(self, piece):
+        """Return all legal destinations for a checker."""
+        if piece is None:
+            return []
+
+        if self.cells[piece.row][piece.col] is not piece:
+            return []
+
+        # A capture chain must continue with the same checker.
+        if self.must_continue_piece is not None:
+            if piece is not self.must_continue_piece:
+                return []
+            return self.get_capture_moves(piece)
+
+        moves = self.get_capture_moves(piece)
+
+        if piece.king:
+            directions = (-1, 1)
+        else:
+            directions = (
+                (1,) if piece.pieceID.startswith("Red") else (-1,)
+            )
+
+        for row_direction in directions:
+            for col_direction in (-1, 1):
+                row = piece.row + row_direction
+                col = piece.col + col_direction
+
+                if 0 <= row < 8 and 0 <= col < 8:
+                    if self.cells[row][col] is None:
+                        moves.append((row, col))
+
+        return moves
+
+    def has_legal_moves(self, color):
+        """Check whether a player can make any legal move."""
+        for row in self.cells:
+            for piece in row:
+                if piece is not None:
+                    piece_color = piece.pieceID.split(" ", 1)[0]
+
+                    if piece_color == color:
+                        if self.get_legal_moves(piece):
+                            return True
+
+        return False
+
+    def get_winner(self):
+        """Return the winner or None if the game continues."""
+
+        red_count = 0
+        black_count = 0
+
+        for row in self.cells:
+            for piece in row:
+                if piece is not None:
+                    color = piece.pieceID.split(" ", 1)[0]
+
+                    if color == "Red":
+                        red_count += 1
+                    elif color == "Black":
+                        black_count += 1
+
+        # Check whether all pieces have been captured.
+        if red_count == 0:
+            return "Black"
+
+        if black_count == 0:
+            return "Red"
+
+        # The player whose turn it is loses if they cannot move.
+        if not self.has_legal_moves(self.current_player):
+            return (
+                "Black" if self.current_player == "Red"
+                else "Red"
+            )
+
+        return None
+    
     def move_piece(self, piece, new_row, new_col):
         """Move diagonally one step or jump an opponent on the board."""
         if piece is None:
@@ -234,11 +317,24 @@ class BoardState:
         if captured_piece is not None:
             middle_row = piece.row + row_delta // 2
             middle_col = piece.col + col_delta // 2
+
+            print("Moving checker:", piece.pieceID)
+            print("Jumped checker:", captured_piece.pieceID)
+            print("Captured position:", middle_row, middle_col)
+
             self.cells[middle_row][middle_col] = None
-            # Remove the captured sprite from its Pygame groups so it is no longer drawn.
             captured_piece.kill()
         self.cells[new_row][new_col] = piece
         piece.move(new_row, new_col)
+        # Promote a checker when it reaches the opposite end
+        piece_color = piece.pieceID.split(" ", 1)[0]
+
+        if not piece.king:
+            if piece_color == "Red" and new_row == 7:
+                piece.king_me()
+
+            elif piece_color == "Black" and new_row == 0:
+                piece.king_me() 
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
             self.must_continue_piece = piece

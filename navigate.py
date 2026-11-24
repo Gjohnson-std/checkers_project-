@@ -7,6 +7,10 @@ active_field = "username"
 status_message = ""
 selected_session = None
 selected_piece = None
+game_mode = "multiplayer"
+computer_difficulty = "easy"
+new_game_requested = False
+
 
 # --------------------------------------------------
 # Screen transitions

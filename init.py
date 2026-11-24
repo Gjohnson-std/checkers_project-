@@ -74,6 +74,7 @@ from sessions import (
 )
 from restart import RestartVote
 
+from computer_player import handle_difficulty, draw_difficulty, take_computer_turn
 
 # --------------------------------------------------
 # Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
@@ -185,7 +186,7 @@ def reset_game():
     all_pieces = GAME_CREATION["pieces"]()
     board_state = BoardState(all_pieces)
     navigate.selected_piece = None
-
+    restart_vote.cancel()
 
 def handle_restart_choice(event):
     if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -197,7 +198,10 @@ def handle_restart_choice(event):
 
     if restart_yes_button.collidepoint(event.pos):
         if restart_vote.stage == "confirm":
-            restart_vote.confirm(True)
+            if navigate.game_mode == "computer":
+                reset_game()
+            else:
+                restart_vote.confirm(True)
         elif restart_vote.vote(True):
             reset_game()
         return
@@ -219,6 +223,12 @@ def handle_game(event):
         restart_vote.request()
         return
 
+    if navigate.game_mode == "computer" and board_state.current_player == "Black":
+        return
+
+    if board_state.get_winner() is not None:
+            return
+    
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
@@ -260,6 +270,31 @@ def handle_game(event):
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
+
+    # --------------------------------------------------
+    # Display Win / Loss
+    # --------------------------------------------------
+
+    winner = board_state.get_winner()
+
+    if winner is not None:
+        if navigate.game_mode == "computer":
+            message = (
+                "You Win!" if winner == "Red"
+                else "Computer Wins!"
+            )
+        else:
+            message = f"{winner} Wins!"
+
+        draw_centered_text(
+            message,
+            title_font,
+            BLACK_COLOR,
+            max(10, board_y - 90)
+        )
+
+    if navigate.game_mode == "computer":
+        draw_centered_text("Vs Computer - " + navigate.computer_difficulty.title(),status_font, BLACK_COLOR, max(10, board_y - 45))
 
     if restart_vote.stage is not None:
         overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -307,6 +342,7 @@ EVENT_HANDLERS = {
     "home": handle_home,
     "login": handle_login,
     "select_session": handle_select_session,
+    "computer_difficulty": handle_difficulty,
     "sessions": handle_session,
     "session": handle_session,
     "game": handle_game,
@@ -316,6 +352,7 @@ DRAW_FUNCS = {
     "home": draw_home,
     "login": draw_login,
     "select_session": draw_select_session,
+    "computer_difficulty": lambda: draw_difficulty(gameDisplay, title_font, ui_font),
     "sessions": draw_session,
     "session": draw_session,
     "game": draw_game,
@@ -332,6 +369,22 @@ while running:
             continue
 
         EVENT_HANDLERS[navigate.screen](event)
+
+    if navigate.new_game_requested:
+        reset_game()
+        navigate.new_game_requested = False
+    
+    if (
+        navigate.screen == "game"
+        and navigate.game_mode == "computer"
+        and restart_vote.stage is None
+        and board_state.current_player == "Black"
+        and board_state.get_winner() is None
+    ):
+        take_computer_turn(
+            board_state,
+            navigate.computer_difficulty
+    )
 
     gameDisplay.blit(bg, (0, 0))
     DRAW_FUNCS[navigate.screen]()
