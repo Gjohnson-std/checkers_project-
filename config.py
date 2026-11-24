@@ -5,6 +5,7 @@ from pathlib import Path
 # --------------------------------------------------
 # board.py Variables 
 # --------------------------------------------------
+pygame.init()
 
 RED_COLOR = '#E63022'
 BLACK_COLOR = '#000000'
