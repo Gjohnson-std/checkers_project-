@@ -232,6 +232,7 @@ def handle_game(event):
         move_log_panel.visable = not move_log_panel.visable
         return
 
+    #when came ends players are given 3 options
     if board_state.game_over:
         game_over_panel.visable = True
         if game_over_panel.save_log_button.collidepoint(event.pos):
@@ -266,12 +267,13 @@ def handle_game(event):
         navigate.selected_piece = None
         return
 
-    selected.move(row, col)
+    
+    #selected.move(row, col)
     navigate.selected_piece = None
     if not session_state.network.send({
         "type": "move",
-        "from": [old_row, old_col],
-        "to": [row, col],
+        "from": (old_row, old_col),
+        "to": (row, col),
     }):
         selected.move(old_row, old_col)
         session_state.set_network_status(
@@ -300,9 +302,17 @@ def handle_game(event):
             navigate.selected_piece = None
         return
 
-    if navigate.selected_piece is not None and board_state.move_piece(
-        navigate.selected_piece, row, col
-    ):
+    if navigate.selected_piece is not None:
+        selected = navigate.selected_piece
+        old_row = selected.row
+        old_col = selected.col
+        
+        if board_state.move_piece(navigate.selected_piece, row, col):
+            session_state.network.send({
+                "type": "move",
+                "from": (old_row, old_col),
+                "to": (row, col)
+            })
         navigate.selected_piece = board_state.must_continue_piece
 
 
