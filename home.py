@@ -1,5 +1,5 @@
 from config import load_asset, WIDTH, HEIGHT
-from navigate import go_to
+from navigate import go_to, screen
 import pygame
 
 
@@ -33,7 +33,7 @@ def home_login():
 
 def home_settings():
     # No settings screen yet: add "settings" to the dispatch tables later.
-    print("Settings screen not implemented yet")
+    go_to("settings")
 
 #closes the game when exit is clicked
 def home_exit():

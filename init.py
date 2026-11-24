@@ -80,6 +80,8 @@ from restart import RestartVote
 
 from hud import HUD
 
+from settings import Settings
+
 # --------------------------------------------------
 # Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
 # --------------------------------------------------
@@ -152,6 +154,25 @@ def draw_login():
             submit_button.bottom + 18,
         )
 
+#The settings screen where the players will be able to adjust the music and sounds
+settings = Settings()
+def draw_settings():
+    pygame.draw.rect(gameDisplay, WHITE_COLOR, settings.panel_rect, 0, border_radius=10)
+    pygame.draw.rect(gameDisplay, BLACK_COLOR, settings.panel_rect, 5, border_radius=10)
+    draw_centered_text("Settings", title_font, BLACK_COLOR, settings.panel_rect.y+50)
+    draw_button(settings.sound_button, f"Sound: {'ON' if settings.sound else 'OFF'}")
+    draw_button(settings.music_button, f"Music: {'ON' if settings.music else 'OFF'}")
+    draw_button(settings.exit_settings, "Back")
+    
+def handle_settings(event):
+    if event.type != pygame.MOUSEBUTTONDOWN:
+        return
+    if settings.sound_button.collidepoint(event.pos):
+        settings.sound = not settings.sound
+    elif settings.music_button.collidepoint(event.pos):
+        settings.music = not settings.music
+    elif settings.exit_settings.collidepoint(event.pos):
+        navigate.go_to("home")
 
 
 def draw_session():
@@ -229,8 +250,9 @@ def handle_game(event):
 
     if move_log_panel.button_rect.collidepoint(event.pos):
         move_log_panel.visable = not move_log_panel.visable
-        return
+        
 
+    #if game over
     if board_state.game_over:
         game_over_panel.visable = True
         if game_over_panel.save_log_button.collidepoint(event.pos):
@@ -461,6 +483,7 @@ EVENT_HANDLERS = {
     "sessions": handle_session,
     "session": handle_session,
     "game": handle_game,
+    "settings": handle_settings
 }
 
 DRAW_FUNCS = {
@@ -470,6 +493,7 @@ DRAW_FUNCS = {
     "sessions": draw_session,
     "session": draw_session,
     "game": draw_game,
+    "settings": draw_settings
 }
 # --------------------------------------------------
 # Game loop
