@@ -75,7 +75,7 @@ from sessions import (
 from restart import RestartVote
 
 from computer_player import handle_difficulty, draw_difficulty, take_computer_turn
-
+from victory_screen import VictoryScreen
 # --------------------------------------------------
 # Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
 # --------------------------------------------------
@@ -177,7 +177,7 @@ def handle_select_session(event):
 restart_vote = RestartVote()
 restart_yes_button = pygame.Rect(WIDTH // 2 - 155, HEIGHT // 2 + 38, 140, 50)
 restart_no_button = pygame.Rect(WIDTH // 2 + 15, HEIGHT // 2 + 38, 140, 50)
-
+victory_screen = None
 
 def reset_game():
     global all_pieces, board_state
@@ -271,6 +271,55 @@ def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
 
+
+# --------------------------------------------------
+# Victory screen
+# --------------------------------------------------
+def show_victory(player_won=True):
+    global victory_screen
+
+    if victory_screen is not None:
+        return
+
+    gameDisplay.blit(bg, (0, 0))
+    draw_game()
+
+    victory_screen = VictoryScreen(
+        gameDisplay,
+        player_won=player_won
+    )
+
+    navigate.go_to("victory")
+
+
+def handle_victory(event):
+    global victory_screen
+
+    if victory_screen is None:
+        return
+
+    result = victory_screen.handle_event(event)
+
+    if result == "select_sessions":
+        reset_game()
+        navigate.selected_session = None
+        navigate.game_mode = "multiplayer"
+        navigate.new_game_requested = False
+        victory_screen = None
+        navigate.go_to("select_session")
+
+    elif result == "main_menu":
+        reset_game()
+        navigate.game_mode = "multiplayer"
+        navigate.new_game_requested = False
+        victory_screen = None
+        navigate.go_to("home")
+
+
+def draw_victory():
+    if victory_screen is not None:
+        victory_screen.draw()
+
     # --------------------------------------------------
     # Display Win / Loss
     # --------------------------------------------------
@@ -346,6 +395,7 @@ EVENT_HANDLERS = {
     "sessions": handle_session,
     "session": handle_session,
     "game": handle_game,
+    "victory": handle_victory,
 }
 
 DRAW_FUNCS = {
@@ -356,24 +406,28 @@ DRAW_FUNCS = {
     "sessions": draw_session,
     "session": draw_session,
     "game": draw_game,
+    "victory": draw_victory
 }
 # --------------------------------------------------
 # Game loop
 # --------------------------------------------------
 
-while running:
+clock = pygame.time.Clock()
 
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
             continue
 
-        EVENT_HANDLERS[navigate.screen](event)
+        handler = EVENT_HANDLERS.get(navigate.screen)
+        if handler is not None:
+            handler(event)
 
     if navigate.new_game_requested:
         reset_game()
         navigate.new_game_requested = False
-    
+
     if (
         navigate.screen == "game"
         and navigate.game_mode == "computer"
@@ -384,13 +438,33 @@ while running:
         take_computer_turn(
             board_state,
             navigate.computer_difficulty
-    )
+        )
 
-    gameDisplay.blit(bg, (0, 0))
-    DRAW_FUNCS[navigate.screen]()
-    draw_build_version()
+    # Trigger only after a completed human win
+    # against the computer.
+    if (
+        navigate.screen == "game"
+        and navigate.game_mode == "computer"
+    ):
+        winner = board_state.get_winner()
+
+        if winner == "Red":
+            show_victory(player_won=True)
+        elif winner == "Black":
+            show_victory(player_won=False)
+        
+    if navigate.screen == "victory":
+        draw_victory()
+    else:
+        gameDisplay.blit(bg, (0, 0))
+        draw = DRAW_FUNCS.get(navigate.screen)
+
+        if draw is not None:
+            draw()
+
+        draw_build_version()
 
     pygame.display.flip()
-
+    clock.tick(60)
 
 pygame.quit()

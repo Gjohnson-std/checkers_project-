@@ -67,7 +67,7 @@ rp = pygame.image.load("checker_pieces_drawings/red_p.png")
 def image_resize(img, resize_val):
     return pygame.transform.smoothscale(
         img,
-        (resize_val, resize_val)
+        (int(resize_val), int(resize_val))
     )
 
 
