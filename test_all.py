@@ -99,6 +99,20 @@ class TestSelectSession:
 # ---------------- pieces ----------------
 
 class TestBoardState:
+    def test_refresh_rebuilds_grid_after_sprite_moves(self):
+        import board
+
+        pieces = board.create_all_pieces()
+        state = board.BoardState(pieces)
+        piece = state.cells[2][1]
+
+        piece.move(3, 0)
+        assert state.cells[2][1] is piece
+
+        state.refresh()
+        assert state.cells[2][1] is None
+        assert state.cells[3][0] is piece
+
     def test_grid_tracks_piece_moves(self):
         import board
 
@@ -221,3 +235,19 @@ class TestHome:
         pygame.event.clear()
         pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(home.WIDTH // 2, y), button=1))
         assert home.run_home_screen(pygame.Surface((home.WIDTH, home.HEIGHT))) == expected
+
+
+#----------------- network ----------------
+
+class TestNetwork:
+    def test_network_module_imports(self):
+        import network
+        assert hasattr(network, "Network")
+        pygame.event.clear()
+        network.Network()  # should not raise an error
+        network.Network().disconnect()  # should not raise an error
+        network.Network().send("test")  # should not raise an error
+        assert network.Network().receive() is None  # should not raise an error
+        assert network.Network().get_player() is None  # should not raise an error
+        assert network.Network().get_game() is None  # should not raise an error
+        assert network.Network().get_session() is None  # should not raise an error
