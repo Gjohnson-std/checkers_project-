@@ -1,6 +1,7 @@
 from config import load_asset, WIDTH, HEIGHT
 from navigate import go_to, screen
 import pygame
+from settings import settings
 
 
 # --------------------------------------------------
@@ -50,6 +51,8 @@ HOME_BUTTONS = (
     (exit_rect, home_exit),
 )
 
+
+
 #handles each indivicual button click on the home screen and calls the appropriate function
 def handle_home(event):
     if event.type != pygame.MOUSEBUTTONDOWN:
@@ -57,5 +60,6 @@ def handle_home(event):
 
     for rect, action in HOME_BUTTONS:
         if rect.collidepoint(event.pos):
+            settings.play_button()
             action()
             return

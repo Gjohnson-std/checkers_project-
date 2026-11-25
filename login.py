@@ -1,9 +1,9 @@
 import pygame
-from config import WIDTH, HEIGHT, back_button
+from config import WIDTH, HEIGHT, back_button, button_sound
 from navigate import go_to
 import navigate
 from credential_store import save_credentials, MAX_CREDENTIAL_LENGTH
-
+from settings import settings
 ## --------------------------------------------------
 # Login screen 
 ## --------------------------------------------------
@@ -40,10 +40,12 @@ def attempt_login():
 
 def login_click(event):
     if back_button.collidepoint(event.pos):
+        settings.play_button()
         go_to("home")
         return
 
     if submit_button.collidepoint(event.pos):
+        settings.play_button()
         attempt_login()
         return
 

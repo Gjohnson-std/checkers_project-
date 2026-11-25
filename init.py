@@ -1,6 +1,7 @@
 
 import pygame
 pygame.init()
+pygame.mixer.init()
 
 from config import WIDTH, HEIGHT 
 # --------------------------------------------------
@@ -80,7 +81,10 @@ from restart import RestartVote
 
 from hud import HUD
 
-from settings import Settings
+from settings import settings
+
+pygame.mixer.music.load("Assets/monume-retro-arcade-game-music-2-629774.mp3")
+pygame.mixer.music.play(-1)
 
 # --------------------------------------------------
 # Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
@@ -154,8 +158,10 @@ def draw_login():
             submit_button.bottom + 18,
         )
 
-#The settings screen where the players will be able to adjust the music and sounds
-settings = Settings()
+# -----------------------------------------------------
+# Settings Screen
+# -----------------------------------------------------
+#settings = Settings()
 def draw_settings():
     pygame.draw.rect(gameDisplay, WHITE_COLOR, settings.panel_rect, 0, border_radius=10)
     pygame.draw.rect(gameDisplay, BLACK_COLOR, settings.panel_rect, 5, border_radius=10)
@@ -168,12 +174,20 @@ def handle_settings(event):
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
     if settings.sound_button.collidepoint(event.pos):
+        settings.play_button()
         settings.sound = not settings.sound
     elif settings.music_button.collidepoint(event.pos):
+        settings.play_button()
         settings.music = not settings.music
     elif settings.exit_settings.collidepoint(event.pos):
+        settings.play_button()
         navigate.go_to("home")
+    if settings.music:
+        pygame.mixer.music.unpause()
+    else:
+        pygame.mixer.music.pause()
 
+#session options
 
 def draw_session():
     session_state.draw_session(gameDisplay)
@@ -288,6 +302,7 @@ def handle_game(event):
         return
 
     selected.move(row, col)
+    print(f"local player {board_state.current_player} moved {selected.pieceID}")
     navigate.selected_piece = None
     if not session_state.network.send({
         "type": "move",
@@ -312,6 +327,7 @@ def handle_game(event):
         return
 
     if clicked_piece is not None:
+        settings.play_piece_move_sound()
         # Only the active player can choose a piece; the model checks moves again.
         if board_state.is_current_player_piece(clicked_piece):
             navigate.selected_piece = (

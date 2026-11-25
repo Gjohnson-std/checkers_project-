@@ -2,6 +2,7 @@ import pygame
 from navigate import go_to
 from config import BLACK_COLOR, WIDTH, HEIGHT
 import sessions
+from settings import settings
 # --------------------------------------------------
 # Screen Settings
 # --------------------------------------------------
@@ -125,8 +126,10 @@ def session_load_screen(surface, title_font, button_font):
 def handle_session_click(event):
 
     if host_game_button.collidepoint(event.pos):
+        settings.play_button()
         host_game()
         return
 
     elif join_session_button.collidepoint(event.pos):
+        settings.play_button()
         join_game()
