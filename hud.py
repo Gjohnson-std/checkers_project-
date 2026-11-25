@@ -56,6 +56,7 @@ class HUD:
         self.drawCapturedPieces(surface, board_state)
         self.drawTurn(surface, board_state)
         self.drawTimer(surface)
+        self.drawCapturedPiecePanels(surface, board_state)
 
 # --------------------------------------------------
 # Displaying Captured Pieces (left and right)
@@ -73,15 +74,19 @@ class HUD:
         return captured
     def drawCapturedPieces(self, surface, board_state):
         captured = self.getCapturedPieces(board_state)
-        local_player = sessions.local_side
-        opponent = "Black" if local_player == "Red" else "Red"
+
+        current_player = board_state.current_player
+        opponent = "Black" if current_player == "Red" else "Red"
+
         # Left = pieces captured by local player
         # Right = pieces captured by opponent 
 
         left_pieces = captured[opponent]
-        right_pieces = captured[local_player]
+        right_pieces = captured[current_player]
+
         icon_size = int(30 * self.scale)
         spacing = int(35 * self.scale)
+
         # Display captured pieces on left
         for index, piece in enumerate(left_pieces):
             key = piece.color.lower()
@@ -205,3 +210,41 @@ class HUD:
         text_x = center_x - text.get_width() // 2
         text_y = center_y - text.get_height() // 2
         surface.blit(text, (text_x, text_y))
+# --------------------------------------------------
+# Captured Piece Panel Logic
+# --------------------------------------------------
+    def drawCapturedPiecePanels(self, surface, board_state):
+        captured = self.getCapturedPieces(board_state)
+        local_player = sessions.local_side
+        opponent = "Black" if local_player == "Red" else "Red"
+
+        # Left panel logic = pieces captured by you
+        left_pieces = captured[opponent]
+        # Right panel logic = pieces your opponent captured
+        right_pieces = captured[local_player]
+
+        # Sizing for sprites
+        icon_size = int(32 * self.scale)
+        spacing_x = int(38 * self.scale)
+        spacing_y = int(38 * self.scale)
+        max_rows = 10
+        left_start_x = self.x + int(35 * self.scale)
+        right_start_x = self.x + int(1320 * self.scale)
+        start_y = self.y + int(220 * self.scale)
+
+        for pieces, start_x in (
+            (left_pieces, left_start_x),
+            (right_pieces, right_start_x)
+        ):
+            for index, piece in enumerate(pieces):
+                key = piece.color.lower()
+                if piece.king:
+                    key += "_king"
+                sprite = pygame.transform.smoothscale(
+                    self.piece_sprites[key], (icon_size, icon_size)
+                )
+                column = index // max_rows
+                row = index % max_rows
+                x = start_x + column * spacing_x
+                y = start_y + row * spacing_y
+                surface.blit(sprite, (x, y))
