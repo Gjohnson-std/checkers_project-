@@ -253,6 +253,7 @@ class GameOverPanel():
 ## ----------------------------------------------------------
 class BoardState:
     def __init__(self, pieces):
+        self.pieces = pieces
         # ===== BOARD ARRAY: 8 rows by 8 columns, indexed as cells[row][col]. =====
         # Each cell holds its CheckerPiece, or None when the square is empty.
         # The sprites remain in their Pygame group for drawing; this grid tracks occupancy.
@@ -271,9 +272,43 @@ class BoardState:
         self.winner = None
         self.game_over = False
 
-        # Build the starting occupancy grid from the pieces' row and column values.
-        for piece in pieces:
-            self.cells[piece.row][piece.col] = piece
+        self.refresh(pieces)
+
+    def refresh(self, pieces=None):
+        """Rebuild the occupancy grid from the current sprite positions."""
+        if pieces is not None:
+            self.pieces = pieces
+
+        self.cells = [
+            [None for _ in range(BOARD_COLS)]
+            for _ in range(BOARD_ROWS)
+        ]
+        if self.pieces is not None:
+            for piece in self.pieces:
+                if (
+                    piece is not None
+                    and 0 <= piece.row < BOARD_ROWS
+                    and 0 <= piece.col < BOARD_COLS
+                ):
+                    self.cells[piece.row][piece.col] = piece
+
+        if self.must_continue_piece is not None:
+            continued_piece = self.must_continue_piece
+            if (
+                not any(candidate is continued_piece for candidate in self.pieces)
+                or self.cells[continued_piece.row][continued_piece.col]
+                is not continued_piece
+            ):
+                self.must_continue_piece = None
+
+        winner = self.win_or_loss_check()
+        self.winner = winner
+        self.game_over = winner is not None
+        return True
+
+    def refresh_board_state(self, pieces=None):
+        """Compatibility name for refreshing the board state."""
+        return self.refresh(pieces)
 
     def is_current_player_piece(self, piece):
         """Return whether a piece belongs to the player whose turn it is."""
@@ -486,6 +521,7 @@ class BoardState:
             #self.moveLog.moveLog_to_CSV(None)
             self.game_over = True
 
+        self.refresh()
         return True
 
     def piece_count(self, player_color):

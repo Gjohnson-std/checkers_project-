@@ -230,6 +230,7 @@ def handle_game(event):
         return
 
     if not session_state.network.connected or session_state.local_side is None:
+        session_state.set_network_status("Connect to an opponent before moving.")
         return
     #toggle move log panel on and off
 
@@ -266,22 +267,10 @@ def handle_game(event):
     col = int((x - board_x) // SQUARE_SIZE)
     row = int((y - board_y) // SQUARE_SIZE)
     selected = navigate.selected_piece
-    old_row, old_col = selected.row, selected.col
     if not (0 <= row < 8 and 0 <= col < 8):
         navigate.selected_piece = None
         return
 
-    selected.move(row, col)
-    navigate.selected_piece = None
-    if not session_state.network.send({
-        "type": "move",
-        "from": [old_row, old_col],
-        "to": [row, col],
-    }):
-        selected.move(old_row, old_col)
-        session_state.set_network_status(
-            "Move could not be sent; connection lost."
-        )
     col = int(board_col_x // SQUARE_SIZE)
     row = int(board_row_y // SQUARE_SIZE)
     clicked_piece = board_state.cells[row][col]
@@ -289,10 +278,20 @@ def handle_game(event):
     if board_state.must_continue_piece is not None:
         # A capture chain cannot be interrupted by selecting another piece.
         navigate.selected_piece = board_state.must_continue_piece
-        if clicked_piece is None and board_state.move_piece(
-            navigate.selected_piece, row, col
-        ):
-            navigate.selected_piece = board_state.must_continue_piece
+        if clicked_piece is None:
+            piece = navigate.selected_piece
+            old_row, old_col = piece.row, piece.col
+            if board_state.move_piece(piece, row, col):
+                navigate.selected_piece = board_state.must_continue_piece
+                board_state.refresh()
+                if not session_state.network.send({
+                    "type": "move",
+                    "from": [old_row, old_col],
+                    "to": [row, col],
+                }):
+                    session_state.set_network_status(
+                        "Move could not be sent; connection lost."
+                    )
         return
 
     if clicked_piece is not None:
@@ -305,10 +304,20 @@ def handle_game(event):
             navigate.selected_piece = None
         return
 
-    if navigate.selected_piece is not None and board_state.move_piece(
-        navigate.selected_piece, row, col
-    ):
-        navigate.selected_piece = board_state.must_continue_piece
+    if navigate.selected_piece is not None:
+        piece = navigate.selected_piece
+        old_row, old_col = piece.row, piece.col
+        if board_state.move_piece(piece, row, col):
+            navigate.selected_piece = board_state.must_continue_piece
+            board_state.refresh()
+            if not session_state.network.send({
+                "type": "move",
+                "from": [old_row, old_col],
+                "to": [row, col],
+            }):
+                session_state.set_network_status(
+                    "Move could not be sent; connection lost."
+                )
 
 
 def draw_game():
@@ -364,8 +373,12 @@ def apply_remote_move(data):
         )
         return
 
-    piece.move(to_row, to_col)
-    session_state.set_network_status("Opponent moved.")
+    board_state.current_player = opponent_side
+    if board_state.move_piece(piece, to_row, to_col):
+        board_state.refresh()
+        session_state.set_network_status("Opponent moved.")
+    else:
+        session_state.set_network_status("Received an invalid opponent move.")
 
 
 def process_network_events():
