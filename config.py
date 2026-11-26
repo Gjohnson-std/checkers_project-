@@ -6,6 +6,7 @@ from pathlib import Path
 # board.py Variables 
 # --------------------------------------------------
 pygame.init()
+pygame.mixer.init()
 
 RED_COLOR = '#E63022'
 BLACK_COLOR = '#000000'
@@ -67,3 +68,7 @@ def load_asset(filename, size, alpha=True):
 # --------------------------------------------------
 
 back_button = pygame.Rect(40, 40, 130, 52)
+
+#sounds
+button_click_sound = pygame.mixer.Sound("Assets/dragon-studio-button-press-382713.mp3")
+checker_piece_sound = pygame.mixer.Sound("Assets/universfield-click-button-140881.mp3")

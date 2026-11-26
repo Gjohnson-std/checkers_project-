@@ -1,6 +1,7 @@
 
 import pygame
 pygame.init()
+pygame.mixer.init()
 
 from config import WIDTH, HEIGHT 
 # --------------------------------------------------
@@ -80,6 +81,10 @@ from restart import RestartVote
 
 from computer_player import handle_difficulty, draw_difficulty, take_computer_turn
 from victory_screen import VictoryScreen
+from settings import settings
+
+pygame.mixer.music.load("Assets/monume-retro-arcade-game-music-2-629774.mp3")
+pygame.mixer.music.play(-1)
 # --------------------------------------------------
 # Drawing helpers -- all of these functions use varible game.Display.bilt and they have to stay in init. It'll crash if i remove them
 # --------------------------------------------------
@@ -165,6 +170,47 @@ def draw_select_session():
 def handle_select_session(event):
     if event.type == pygame.MOUSEBUTTONDOWN:
         handle_session_click(event)
+
+#Settings Menu
+
+def draw_settings():
+    """Drawing settings menu with sound and music control and a back button"""
+    pygame.draw.rect(gameDisplay, WHITE_COLOR, settings.settings_panel, border_radius=10)
+    pygame.draw.rect(gameDisplay, BLACK_COLOR, settings.settings_panel, 3, border_radius=10)
+    draw_centered_text("Settings", title_font, BLACK_COLOR, settings.settings_panel.y +20)
+
+    draw_centered_text(f"Sound Volume: {settings.sound_volume}", ui_font, BLACK_COLOR, settings.settings_panel.y+100)
+    draw_button(settings.sound_button, f"Sound: {'ON' if settings.sound else 'OFF'}")
+    draw_button(settings.sound_up, "+")
+    draw_button(settings.sound_down, "-")
+
+    draw_centered_text(f"Music Volume: {settings.music_volume}", ui_font, BLACK_COLOR, settings.settings_panel.y+250)
+    draw_button(settings.music_button, f"Sound: {'ON' if settings.sound else 'OFF'}")
+    draw_button(settings.music_up, "+")
+    draw_button(settings.music_down, "-")
+    
+    draw_button(settings.exit_settings, "Exit Settings")
+
+def handle_settings(event):
+    """coontrol sound and muisc volume"""
+    if event.type != pygame.MOUSEBUTTONDOWN:
+        return
+    if settings.sound_up.collidepoint(event.pos):
+        if settings.sound_volume < 1.0:
+            settings.sound_volume += 0.1
+    elif settings.sound_button.collidepoint(event.pos):
+        settings.sound = not settings.sound
+    elif settings.sound_down.collidepoint(event.pos):
+        if settings.sound_volume > 0.0:
+            settings.sound_volume -= 0.1
+    elif settings.music_button.collidepoint(event.pos):
+        settings.music = not settings.music
+        if settings.music:
+            pygame.mixer.music.unpause()
+        else:
+            pygame.mixer.music.pause()
+    elif settings.exit_settings.collidepoint(event.pos):
+        navigate.go_to("home")
 
 
 # --------------------------------------------------
@@ -551,6 +597,7 @@ EVENT_HANDLERS = {
     "session": handle_session,
     "game": handle_game,
     "victory": handle_victory,
+    "settings": handle_settings
 }
 
 DRAW_FUNCS = {
@@ -561,7 +608,8 @@ DRAW_FUNCS = {
     "sessions": draw_session,
     "session": draw_session,
     "game": draw_game,
-    "victory": draw_victory
+    "victory": draw_victory,
+    "settings": draw_settings
 }
 # --------------------------------------------------
 # Game loop
