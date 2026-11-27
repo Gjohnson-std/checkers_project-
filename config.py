@@ -70,5 +70,8 @@ def load_asset(filename, size, alpha=True):
 back_button = pygame.Rect(40, 40, 130, 52)
 
 #sounds
-button_click_sound = pygame.mixer.Sound("Assets/dragon-studio-button-press-382713.mp3")
-checker_piece_sound = pygame.mixer.Sound("Assets/universfield-click-button-140881.mp3")
+checker_piece_sound = pygame.mixer.Sound("Assets/dragon-studio-button-press-382713.mp3")
+button_click_sound = pygame.mixer.Sound("Assets/universfield-click-button-140881.mp3")
+
+#settings button
+settings_button = pygame.rect.Rect(40, HEIGHT - 92, 180, 52)

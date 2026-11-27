@@ -1,6 +1,7 @@
 from config import load_asset, WIDTH, HEIGHT
 from navigate import go_to
 import pygame
+from settings import settings
 
 
 # --------------------------------------------------
@@ -28,16 +29,18 @@ exit_rect = exit_img.get_rect(center=(WIDTH // 2, int(HEIGHT * 0.815)))
 
 #uses go to navaigation to go to the login screen 
 def home_login():
+    settings.play_button_sound()
     go_to("login")
 
 
 def home_settings():
-    # No settings screen yet: add "settings" to the dispatch tables later.
-    print("Settings screen not implemented yet")
-    go_to("settings")
+    #go_to("settings")
+    settings.play_button_sound()
+    settings.visible = not settings.visible
 
 #closes the game when exit is clicked
 def home_exit():
+    settings.play_button_sound()
     pygame.event.post(pygame.event.Event(pygame.QUIT))
 
 ## --------------------------------------------------

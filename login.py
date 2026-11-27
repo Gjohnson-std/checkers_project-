@@ -3,7 +3,7 @@ from config import WIDTH, HEIGHT, back_button
 from navigate import go_to
 import navigate
 from credential_store import save_credentials, MAX_CREDENTIAL_LENGTH
-
+from settings import settings
 ## --------------------------------------------------
 # Login screen 
 ## --------------------------------------------------
@@ -12,6 +12,7 @@ from credential_store import save_credentials, MAX_CREDENTIAL_LENGTH
 username_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 90, 500, 58)
 password_field = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 + 4, 500, 58)
 submit_button = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 115, 220, 58)
+
 
 # field name -> rect, used for click detection and drawing
 LOGIN_FIELDS = {
@@ -40,10 +41,12 @@ def attempt_login():
 
 def login_click(event):
     if back_button.collidepoint(event.pos):
+        settings.play_button_sound()
         go_to("home")
         return
 
     if submit_button.collidepoint(event.pos):
+        settings.play_button_sound()
         attempt_login()
         return
 

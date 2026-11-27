@@ -31,6 +31,7 @@ from config import (
     BUILD_VER,
     bg,
     back_button,
+    settings_button
 )
 
 
@@ -81,7 +82,7 @@ from restart import RestartVote
 
 from computer_player import handle_difficulty, draw_difficulty, take_computer_turn
 from victory_screen import VictoryScreen
-from settings import settings
+from settings import settings, handle_settings
 
 pygame.mixer.music.load("Assets/monume-retro-arcade-game-music-2-629774.mp3")
 pygame.mixer.music.play(-1)
@@ -123,6 +124,7 @@ def draw_home():
 def draw_login():
     draw_centered_text("Login", title_font, BLACK_COLOR, HEIGHT // 2 - 230)
     draw_button(back_button, "Back")
+    draw_button(settings_button, "Settings")
 
     for rect, label, value, field_name in (
         (username_field, "Username", navigate.username, "username"),
@@ -175,43 +177,23 @@ def handle_select_session(event):
 
 def draw_settings():
     """Drawing settings menu with sound and music control and a back button"""
+    if not settings.visible:
+        return
     pygame.draw.rect(gameDisplay, WHITE_COLOR, settings.settings_panel, border_radius=10)
     pygame.draw.rect(gameDisplay, BLACK_COLOR, settings.settings_panel, 3, border_radius=10)
     draw_centered_text("Settings", title_font, BLACK_COLOR, settings.settings_panel.y +20)
 
-    draw_centered_text(f"Sound Volume: {settings.sound_volume}", ui_font, BLACK_COLOR, settings.settings_panel.y+100)
+    draw_centered_text(f"Sound Volume: {int(settings.sound_volume * 10)}", ui_font, BLACK_COLOR, settings.settings_panel.y+100)
     draw_button(settings.sound_button, f"Sound: {'ON' if settings.sound else 'OFF'}")
     draw_button(settings.sound_up, "+")
     draw_button(settings.sound_down, "-")
 
-    draw_centered_text(f"Music Volume: {settings.music_volume}", ui_font, BLACK_COLOR, settings.settings_panel.y+250)
-    draw_button(settings.music_button, f"Sound: {'ON' if settings.sound else 'OFF'}")
+    draw_centered_text(f"Music Volume: {int(settings.music_volume * 10)}", ui_font, BLACK_COLOR, settings.settings_panel.y+250)
+    draw_button(settings.music_button, f"Sound: {'ON' if settings.music else 'OFF'}")
     draw_button(settings.music_up, "+")
     draw_button(settings.music_down, "-")
     
     draw_button(settings.exit_settings, "Exit Settings")
-
-def handle_settings(event):
-    """coontrol sound and muisc volume"""
-    if event.type != pygame.MOUSEBUTTONDOWN:
-        return
-    if settings.sound_up.collidepoint(event.pos):
-        if settings.sound_volume < 1.0:
-            settings.sound_volume += 0.1
-    elif settings.sound_button.collidepoint(event.pos):
-        settings.sound = not settings.sound
-    elif settings.sound_down.collidepoint(event.pos):
-        if settings.sound_volume > 0.0:
-            settings.sound_volume -= 0.1
-    elif settings.music_button.collidepoint(event.pos):
-        settings.music = not settings.music
-        if settings.music:
-            pygame.mixer.music.unpause()
-        else:
-            pygame.mixer.music.pause()
-    elif settings.exit_settings.collidepoint(event.pos):
-        navigate.go_to("home")
-
 
 # --------------------------------------------------
 # Game screen
@@ -240,6 +222,7 @@ def handle_restart_choice(event):
         return
 
     if restart_yes_button.collidepoint(event.pos):
+        settings.play_button_sound()
         if restart_vote.stage == "confirm":
             if navigate.game_mode == "computer":
                 reset_game()
@@ -250,6 +233,7 @@ def handle_restart_choice(event):
         return
 
     if restart_no_button.collidepoint(event.pos):
+        settings.play_button_sound()
         if restart_vote.stage == "confirm":
             restart_vote.confirm(False)
         elif restart_vote.stage == "vote":
@@ -569,6 +553,8 @@ def reset_game():
     game_over_panel.visible = False
     navigate.selected_piece = None
 
+
+
 ## --------------------------------------------------
 #  Dictionaries
 # --------------------------------------------------
@@ -624,6 +610,16 @@ while running:
             session_state.network.close()
             continue
 
+        if settings.visible:
+            handle_settings(event)
+            continue
+
+        if (navigate.screen != "home" 
+            and event.type == pygame.MOUSEBUTTONDOWN 
+            and settings_button.collidepoint(event.pos)):
+            settings.visible = not settings.visible
+            continue
+
         handler = EVENT_HANDLERS.get(navigate.screen)
         if handler is not None:
             handler(event)
@@ -667,6 +663,11 @@ while running:
             draw()
 
         draw_build_version()
+
+    if navigate.screen != "home": 
+        draw_button(settings_button, "Settings")
+    if settings.visible:
+        draw_settings()
 
     pygame.display.flip()
     clock.tick(60)
