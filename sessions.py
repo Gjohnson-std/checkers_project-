@@ -11,6 +11,7 @@ from config import (
     title_font,
 )
 from network import Network
+from settings import settings
 
 # Retained for compatibility with the existing session-button tests.
 session_ID = ["Session A", "Session B", "Session C"]
@@ -88,6 +89,7 @@ class SessionButton:
         )
 
     def is_clicked(self, pos):
+        settings.play_button_sound()
         return self.rect.collidepoint(pos)
 
 # --------------------------------------------------
@@ -127,6 +129,7 @@ def handle_session(event):
         return
 
     if back_button.collidepoint(event.pos):
+        settings.play_button_sound()
         network.close()
         local_side = None
         connecting = False
