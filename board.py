@@ -356,6 +356,21 @@ class BoardState:
 
         return capture_moves
     
+    def player_has_available_jump(self, color):
+        """Check whether any checker belonging to a player can capture."""
+        for row in self.cells:
+            for piece in row:
+                if piece is None:
+                    continue
+
+                piece_color = piece.pieceID.split(" ", 1)[0]
+
+                if piece_color == color:
+                    if self.get_capture_moves(piece):
+                        return True
+
+        return False
+
     # --------------------------------------------------
     # Win / Loss Conditions
     # --------------------------------------------------
@@ -459,6 +474,14 @@ class BoardState:
 
         row_delta = new_row - piece.row
         col_delta = new_col - piece.col
+
+        # Huffing rule: remember whether a capture was available
+        # before this move was made.
+        missed_jump = (
+            self.must_continue_piece is None
+            and abs(row_delta) == 1
+            and self.player_has_available_jump(self.current_player)
+)
         if abs(row_delta) != abs(col_delta) or abs(row_delta) not in (1, 2):
             return False
         if self.must_continue_piece is piece and abs(row_delta) != 2:
@@ -513,6 +536,21 @@ class BoardState:
 
             elif piece_color == "Black" and new_row == 0:
                 piece.king_me() 
+        
+        # Apply the huffing penalty after the piece moves.
+        if missed_jump:
+            self.cells[new_row][new_col] = None
+            piece.kill()
+
+            self.moveLog.log.append({
+                "turn": len(self.moveLog.log) + 1,
+                "action": "HUFF",
+                "piece": piece.pieceID,
+                "message": (
+                    f"MISSED JUMP! {piece.pieceID} was removed."
+                )
+        })
+
         # Keep the turn for another available jump; otherwise hand play to the opponent.
         if captured_piece is not None and self.get_capture_moves(piece):
             self.must_continue_piece = piece
