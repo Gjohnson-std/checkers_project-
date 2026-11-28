@@ -2,6 +2,7 @@ import pygame
 from navigate import go_to
 from config import BLACK_COLOR, WIDTH, HEIGHT
 import sessions
+import navigate
 # --------------------------------------------------
 # Screen Settings
 # --------------------------------------------------
@@ -71,10 +72,20 @@ def draw_button(surface, button, text, font):
 
 # this functions allows for movement to the next screens
 def host_game():
+    # Switch to multiplayer mode.
+    navigate.game_mode = "multiplayer"
+
+    # Start hosting the game.
     if sessions.start_host():
+        navigate.new_game_requested = True
         go_to("game")
 
+
 def join_game():
+    # Switch to multiplayer mode.
+    navigate.game_mode = "multiplayer"
+
+    # Open the LAN connection screen.
     sessions.start_join()
 
 def session_load_screen(surface, title_font, button_font):
