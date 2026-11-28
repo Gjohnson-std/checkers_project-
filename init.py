@@ -229,8 +229,12 @@ def handle_game(event):
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
 
-    if not session_state.network.connected or session_state.local_side is None:
-        session_state.set_network_status("Connect to an opponent before moving.")
+    # Only multiplayer games require a network connection.
+    if navigate.game_mode != "computer":
+        if not session_state.network.connected or session_state.local_side is None:
+            session_state.set_network_status(
+                "Connect to an opponent before moving."
+        )
         return
     #toggle move log panel on and off
 
@@ -256,9 +260,15 @@ def handle_game(event):
 
     if navigate.selected_piece is None:
         for piece in all_pieces:
+            if navigate.game_mode == 'computer':
+                allowed_side = "Red"
+            else: 
+                allowed_side = session_state.local_side
+
             if (
                 piece.rect.collidepoint((x, y))
-                and piece.pieceID.startswith(f"{session_state.local_side} ")
+                and piece.pieceID.startswith(f"{allowed_side} ")
+                and board_state.is_current_player_piece(piece)
             ):
                 navigate.selected_piece = piece
                 return
@@ -307,17 +317,21 @@ def handle_game(event):
     if navigate.selected_piece is not None:
         piece = navigate.selected_piece
         old_row, old_col = piece.row, piece.col
-        if board_state.move_piece(piece, row, col):
-            navigate.selected_piece = board_state.must_continue_piece
-            board_state.refresh()
-            if not session_state.network.send({
-                "type": "move",
-                "from": [old_row, old_col],
-                "to": [row, col],
-            }):
-                session_state.set_network_status(
-                    "Move could not be sent; connection lost."
-                )
+
+    if board_state.move_piece(piece, row, col):
+        navigate.selected_piece = board_state.must_continue_piece
+        board_state.refresh()
+
+    # Only send moves to another player in multiplayer mode.
+    if navigate.game_mode != "computer":
+        if not session_state.network.send({
+            "type": "move",
+            "from": [old_row, old_col],
+            "to": [row, col],
+        }):
+            session_state.set_network_status(
+                "Move could not be sent; connection lost."
+            )
 
 
 def draw_game():
