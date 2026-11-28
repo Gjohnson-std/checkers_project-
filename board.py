@@ -264,6 +264,9 @@ class BoardState:
         # Red starts. A capture chain keeps the same piece active until it ends.
         self.current_player = "Red"
         self.must_continue_piece = None
+# Stores pieces captured during the game
+        self.captured_pieces = []
+
 
         #move log
         self.moveLog = MoveLog()
@@ -491,6 +494,10 @@ class BoardState:
             print("Captured position:", middle_row, middle_col)
 
             self.cells[middle_row][middle_col] = None
+            cap_log = captured_piece
+
+            self.captured_pieces.append(captured_piece)
+           
             captured_piece.kill()
         self.cells[new_row][new_col] = piece
         row_log = piece.row

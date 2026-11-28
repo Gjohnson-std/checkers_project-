@@ -80,6 +80,8 @@ from sessions import (
 )
 from restart import RestartVote
 
+from hud import HUD
+
 from computer_player import handle_difficulty, draw_difficulty, take_computer_turn
 from victory_screen import VictoryScreen
 from settings import settings, handle_settings
@@ -202,6 +204,9 @@ def draw_settings():
 restart_vote = RestartVote()
 restart_yes_button = pygame.Rect(WIDTH // 2 - 155, HEIGHT // 2 + 38, 140, 50)
 restart_no_button = pygame.Rect(WIDTH // 2 + 15, HEIGHT // 2 + 38, 140, 50)
+
+hud = HUD()
+
 victory_screen = None
 
 def reset_game():
@@ -367,6 +372,8 @@ def handle_game(event):
 def draw_game():
     gameDisplay.blit(BOARD, (board_x, board_y))
     all_pieces.draw(gameDisplay)
+    # Draw HUD added 
+    hud.draw(gameDisplay, board_state)
     status = status_font.render(
         session_state.status_message,
         True,
@@ -433,6 +440,9 @@ def process_network_events():
             session_state.set_network_status(
                 f"Opponent connected. You are {session_state.local_side}."
             )
+            # Added this line to only start  HUD timer once opponent has connected
+            hud.startTimer(board_state)
+
             if session_state.local_side == "Black":
                 navigate.go_to("game")
         elif message_type == "message":
