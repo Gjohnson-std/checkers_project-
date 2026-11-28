@@ -221,6 +221,8 @@ class HUD:
         # Left panel logic = pieces captured by you
         left_pieces = captured[opponent]
         # Right panel logic = pieces your opponent captured
+        if local_player is None:
+            return
         right_pieces = captured[local_player]
 
         # Sizing for sprites

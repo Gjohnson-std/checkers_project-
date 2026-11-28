@@ -35,6 +35,7 @@ def _get_lan_ip():
 
 
 def start_host():
+    print("HOST NETWORK ID: ", id(network))
     global local_side, status_message, connecting
     network.close()
     connecting = False
@@ -49,6 +50,7 @@ def start_host():
 
 
 def start_join():
+    print("NETWORK ID: ", id(network))
     global host_ip, local_side, status_message, connecting
     network.close()
     host_ip = ""
@@ -60,6 +62,7 @@ def start_join():
 
 
 def join_host():
+    print("NETWORK ID: ", id(network))
     global status_message, connecting
     if connecting:
         return

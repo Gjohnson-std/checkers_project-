@@ -247,32 +247,54 @@ def handle_restart_choice(event):
 
 
 def handle_game(event):
+    #print("HANDLE GAME ENTERED")
+    #print("EVENT TYPE: ", pygame.event.event_name(event.type))
+    #print(f"SETTINGS: {settings.visible}\t SCREEN: {navigate.screen}")
     if restart_vote.stage is not None:
+        print("VOTE")
         handle_restart_choice(event)
         return
-
+    
     if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        print("COMPUTER MODE")
         restart_vote.request()
         return
-
+    
     if navigate.game_mode == "computer" and board_state.current_player == "Black":
+        print("WINNER")
         return
-
+    
     if board_state.get_winner() is not None:
-            return
+        print("NOT CLICK")
+        return
     
     if event.type != pygame.MOUSEBUTTONDOWN:
+        print("INCORRECT CLICK")
         return
+    print(
+    "CONNECTED:",
+    session_state.network.connected
+    )
 
+    print(
+        "SIDE:",
+        session_state.local_side
+    )
+
+    print(
+        "CURRENT PLAYER:",
+        board_state.current_player
+    )
+    
     # Only multiplayer games require a network connection.
+    
     if navigate.game_mode != "computer":
         if not session_state.network.connected or session_state.local_side is None:
-            session_state.set_network_status(
-                "Connect to an opponent before moving."
-        )
-        return
+            session_state.set_network_status("Connect to an opponent before moving.")
+            print("NETWORK CONNECTED?: ", session_state.network.connected)
+            print("LOCAL SIDE?: ", session_state.local_side)
+            return
     #toggle move log panel on and off
-
     if move_log_panel.button_rect.collidepoint(event.pos):
         move_log_panel.visable = not move_log_panel.visable
         return
@@ -292,13 +314,15 @@ def handle_game(event):
     board_row_y = y - board_y
     if not (0 <= board_col_x < BOARD_SIZE and 0 <= board_row_y < BOARD_SIZE):
         return
-
     if navigate.selected_piece is None:
+        print("trying to select a piece")
         for piece in all_pieces:
             if navigate.game_mode == 'computer':
                 allowed_side = "Red"
             else: 
                 allowed_side = session_state.local_side
+
+            print(f"LOCAL SIDE: {session_state.local_side}\tCURRENT PLAYER: {board_state.current_player}\tPIECE: {piece.pieceID}")
 
             if (
                 piece.rect.collidepoint((x, y))
@@ -306,12 +330,14 @@ def handle_game(event):
                 and board_state.is_current_player_piece(piece)
             ):
                 navigate.selected_piece = piece
+                print("piece selected: ", piece.pieceID)
                 return
         return
 
     col = int((x - board_x) // SQUARE_SIZE)
     row = int((y - board_y) // SQUARE_SIZE)
     selected = navigate.selected_piece
+    
     if not (0 <= row < 8 and 0 <= col < 8):
         navigate.selected_piece = None
         return
@@ -433,7 +459,9 @@ def apply_remote_move(data):
 
 
 def process_network_events():
+    #print("PROCESSING NETWORK ID:", id(session_state.network))
     for message in session_state.network.poll():
+        print("NETWORK MESSAGE: ", message)
         message_type = message.get("type")
         if message_type == "connected":
             session_state.set_connecting(False)
@@ -443,8 +471,9 @@ def process_network_events():
             # Added this line to only start  HUD timer once opponent has connected
             hud.startTimer(board_state)
 
-            if session_state.local_side == "Black":
-                navigate.go_to("game")
+            #if session_state.local_side == "Black":
+                #navigate.go_to("game")
+            navigate.go_to("game")
         elif message_type == "message":
             apply_remote_move(message.get("data"))
         elif message_type == "disconnected":
@@ -628,6 +657,7 @@ DRAW_FUNCS = {
 clock = pygame.time.Clock()
 
 while running:
+    process_network_events()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False

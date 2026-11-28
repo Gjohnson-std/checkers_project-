@@ -14,6 +14,7 @@ class Network:
         self.running = False
 #Host Game Functionality 
     def host(self, port=5555):
+        print("HOST CALLED")
         self.running = True
         self.server = socket.socket(
             socket.AF_INET,
@@ -25,36 +26,52 @@ class Network:
             1
         )
         self.server.bind(("0.0.0.0", port))
+        print("BIND SUCCESS: ", self.server.getsockname())
         self.server.listen(1)
+        print("LISTENING ON: ", port)
+
+        print("SERVER OBJECT:", self.server)
+
+        print("RUNNING:", self.running)
 
         threading.Thread(
             target=self._accept_connection,
             daemon=True
         ).start()
     def _accept_connection(self):
+        print("WAITING FOR CONNECTION")
         try:
             client, address = self.server.accept()
+            print("CLIENT CONNECTED: ", address)
             if not self.running:
                 client.close()
                 return
             self.client = client
             self.connected = True
+            print("HOST CONNECTED FLAG SET")
             self.messages.put({"type": "connected", "address": address})
             self._receive_loop()
-        except OSError:
+            print("CONNECTED MESSAGE QUEUED")
+        #except OSError
+        except Exception as error:
+            print("ACCEPT ERROR:", repr(error))
             if self.running:
                 self.messages.put({"type": "error", "message": "Unable to accept connection"})
 
 # Join Game Functionality 
     def join(self, host_ip, port=5555):
+        print("JOIN CALLED")
         self.running = True
+        print("STARTING THREAD")
         threading.Thread(
             target=self._connect,
             args=(host_ip, port),
             daemon=True
         ).start()
     def _connect(self, host_ip, port):
+        print("ENTERED CONNECT")
         try:
+            print("ATTEMPTING CONNECTION: ", host_ip, port)
             client = socket.create_connection((host_ip, port), timeout=5)
             client.settimeout(None)
             if not self.running:
@@ -62,9 +79,11 @@ class Network:
                 return
             self.client = client
             self.connected = True
+            print("CLIENT CONNECTED FLAG SET")
             self.messages.put({"type": "connected"})
             self._receive_loop()
         except OSError as error:
+            print("CONNECT ERROR: ", repr(error))
             if self.running:
                 self.messages.put({"type": "error", "message": str(error)})
 # Sending Messages
